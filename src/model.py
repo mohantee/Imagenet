@@ -6,23 +6,23 @@ class Bottleneck(nn.Module):
 
     def __init__(self, in_channels, out_channels, stride=1):
         super().__init__()
-        
+
         # 1x1 convolution for dimension reduction
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(out_channels)
-        
+
         # 3x3 convolution
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, 
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3,
                               stride=stride, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(out_channels)
-        
+
         # 1x1 convolution for dimension increase
-        self.conv3 = nn.Conv2d(out_channels, out_channels * self.expansion, 
+        self.conv3 = nn.Conv2d(out_channels, out_channels * self.expansion,
                               kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(out_channels * self.expansion)
-        
+
         self.relu = nn.ReLU(inplace=True)
-        
+
         # Shortcut connection
         self.shortcut = nn.Sequential()
         if stride != 1 or in_channels != out_channels * self.expansion:
@@ -54,7 +54,7 @@ class Bottleneck(nn.Module):
 class ResNet50(nn.Module):
     def __init__(self, num_classes=1000):
         super().__init__()
-        
+
         # Initial convolution layer
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
@@ -76,10 +76,10 @@ class ResNet50(nn.Module):
 
     def _make_stage(self, in_channels, out_channels, num_blocks, stride):
         layers = []
-        
+
         # First block with specified stride
         layers.append(Bottleneck(in_channels, out_channels, stride))
-        
+
         # Remaining blocks with stride 1
         for _ in range(1, num_blocks):
             layers.append(Bottleneck(out_channels * 4, out_channels))
