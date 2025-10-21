@@ -1,11 +1,11 @@
-# ResNet-50 Mini-ImageNet Training
+# ResNet-50 ImageNet-100 Training
 
-A complete implementation of ResNet-50 for training on the Mini-ImageNet dataset with advanced data augmentation techniques including Mixup.
+A complete implementation of ResNet-50 for training on the ImageNet-100 dataset with advanced data augmentation techniques including Mixup.
 
 ## 🚀 Features
 
 - **Custom ResNet-50 Implementation**: Built from scratch with proper bottleneck blocks
-- **Mini-ImageNet Dataset**: Automated download and setup from Hugging Face
+- **ImageNet-100 Dataset**: Automated download and setup from Kaggle
 - **Advanced Data Augmentation**: Mixup, random crops, color jittering, and more
 - **Training Pipeline**: Complete training loop with checkpointing and evaluation
 - **Progress Monitoring**: Real-time training progress with tqdm
@@ -20,7 +20,7 @@ Imagenet/
 │   ├── train.py          # Training functions with mixup
 │   ├── test.py           # Evaluation functions
 │   └── main.py           # Main training script
-├── download_mini_imagenet.py  # Dataset download script
+├── download_imagenet100.py    # Dataset download script
 ├── monitor_training.py        # Training monitoring tool
 ├── setup.py                   # Quick setup script
 ├── pyproject.toml            # Project dependencies
@@ -45,29 +45,49 @@ python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
-pip install torch torchvision numpy pillow tqdm datasets requests
+pip install torch torchvision numpy pillow tqdm kaggle
 
-# Download Mini-ImageNet dataset
-python download_mini_imagenet.py
+# Download ImageNet-100 dataset
+python download_imagenet100.py
 ```
 
 ## 📊 Dataset
 
-### Mini-ImageNet
-- **Classes**: 100
-- **Training Images**: 50,000 (500 per class)
-- **Test Images**: 10,000 (100 per class)
-- **Image Size**: 84x84 pixels (resized to 224x224 for training)
-- **Source**: Hugging Face Datasets Hub
+### ImageNet-100
+- **Classes**: 100 (subset of ImageNet-1K)
+- **Training Images**: ~130,000 (varies per class)
+- **Validation Images**: ~5,000 (50 per class)
+- **Image Size**: Variable (resized to 224x224 for training)
+- **Source**: Kaggle Dataset
 
 ### Download
 ```bash
-# Download to default location (./mini-imagenet)
-python download_mini_imagenet.py
+# Download to default location (./imagenet100)
+python download_imagenet100.py
 
 # Download to custom location
-python download_mini_imagenet.py /path/to/custom/directory
+python download_imagenet100.py /path/to/custom/directory
 ```
+
+### Kaggle Setup
+Before downloading, you need to set up Kaggle API credentials:
+
+1. **Create Kaggle Account**: Go to [kaggle.com](https://www.kaggle.com) and create an account
+2. **Get API Token**: 
+   - Go to [Account Settings](https://www.kaggle.com/account)
+   - Click "Create New API Token"
+   - Download `kaggle.json`
+3. **Setup Credentials**:
+   ```bash
+   mkdir -p ~/.kaggle
+   cp kaggle.json ~/.kaggle/
+   chmod 600 ~/.kaggle/kaggle.json
+   ```
+
+### Dataset Details
+- **Source**: [Kaggle ImageNet-100](https://www.kaggle.com/datasets/ambityga/imagenet100)
+- **Structure**: Pre-organized into `train/` and `val/` directories
+- **Class Names**: Uses original ImageNet class names
 
 ## 🏃‍♂️ Training
 
@@ -77,7 +97,7 @@ python download_mini_imagenet.py /path/to/custom/directory
 source venv/bin/activate
 
 # Start training with default parameters
-python src/main.py --data_dir ./mini-imagenet
+python src/main.py --data_dir ./imagenet100
 ```
 
 ### Advanced Training Options

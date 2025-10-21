@@ -14,13 +14,13 @@ from train import train, train_transforms, test_transforms, mixup_data, mixup_cr
 from test import evaluate
 
 
-def get_mini_imagenet_dataset(data_dir, train=True, augment=False):
+def get_imagenet100_dataset(data_dir, train=True, augment=False):
     """
-    Load Mini-ImageNet dataset.
+    Load ImageNet-100 dataset.
     
     Args:
-        data_dir: Path to the Mini-ImageNet dataset directory
-        train: If True, load training set; if False, load test set
+        data_dir: Path to the ImageNet-100 dataset directory
+        train: If True, load training set; if False, load validation set
         augment: If True, apply data augmentation for training
         
     Returns:
@@ -30,7 +30,7 @@ def get_mini_imagenet_dataset(data_dir, train=True, augment=False):
         dataset_path = os.path.join(data_dir, 'train')
         transform = train_transforms(augment=augment)
     else:
-        dataset_path = os.path.join(data_dir, 'test')
+        dataset_path = os.path.join(data_dir, 'val')
         transform = test_transforms()
     
     if not os.path.exists(dataset_path):
@@ -42,26 +42,26 @@ def get_mini_imagenet_dataset(data_dir, train=True, augment=False):
 
 def create_data_loaders(data_dir, batch_size=32, num_workers=4, augment=True):
     """
-    Create training and test data loaders for Mini-ImageNet.
+    Create training and validation data loaders for ImageNet-100.
     
     Args:
-        data_dir: Path to the Mini-ImageNet dataset directory
+        data_dir: Path to the ImageNet-100 dataset directory
         batch_size: Batch size for data loaders
         num_workers: Number of worker processes for data loading
         augment: Whether to apply data augmentation to training set
         
     Returns:
-        Tuple of (train_loader, test_loader, num_classes)
+        Tuple of (train_loader, val_loader, num_classes)
     """
     # Load datasets
-    train_dataset = get_mini_imagenet_dataset(data_dir, train=True, augment=augment)
-    test_dataset = get_mini_imagenet_dataset(data_dir, train=False, augment=False)
+    train_dataset = get_imagenet100_dataset(data_dir, train=True, augment=augment)
+    val_dataset = get_imagenet100_dataset(data_dir, train=False, augment=False)
     
     # Get number of classes
     num_classes = len(train_dataset.classes)
     print(f"Number of classes: {num_classes}")
     print(f"Training samples: {len(train_dataset)}")
-    print(f"Test samples: {len(test_dataset)}")
+    print(f"Validation samples: {len(val_dataset)}")
     
     # Create data loaders
     train_loader = DataLoader(
@@ -72,15 +72,15 @@ def create_data_loaders(data_dir, batch_size=32, num_workers=4, augment=True):
         pin_memory=True
     )
     
-    test_loader = DataLoader(
-        test_dataset,
+    val_loader = DataLoader(
+        val_dataset,
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
         pin_memory=True
     )
     
-    return train_loader, test_loader, num_classes
+    return train_loader, val_loader, num_classes
 
 
 def save_checkpoint(model, optimizer, scheduler, epoch, accuracy, filepath):
@@ -121,9 +121,9 @@ def load_checkpoint(filepath, model, optimizer=None, scheduler=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Train ResNet-50 on Mini-ImageNet')
-    parser.add_argument('--data_dir', type=str, required=True,
-                        help='Path to Mini-ImageNet dataset directory')
+    parser = argparse.ArgumentParser(description='Train ResNet-50 on ImageNet-100')
+    parser.add_argument('--data_dir', type=str, default='./imagenet100',
+                        help='Path to ImageNet-100 dataset directory (default: ./imagenet100)')
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size for training (default: 32)')
     parser.add_argument('--epochs', type=int, default=100,
@@ -161,8 +161,8 @@ def main():
     os.makedirs(args.save_dir, exist_ok=True)
     
     # Create data loaders
-    print("Loading Mini-ImageNet dataset...")
-    train_loader, test_loader, num_classes = create_data_loaders(
+    print("Loading ImageNet-100 dataset...")
+    train_loader, val_loader, num_classes = create_data_loaders(
         args.data_dir, 
         batch_size=args.batch_size, 
         num_workers=args.num_workers,
@@ -213,8 +213,8 @@ def main():
         train(model, train_loader, criterion, optimizer, scheduler, device, epoch)
         
         # Evaluate
-        print("\nEvaluating on test set...")
-        accuracy = evaluate(model, test_loader, criterion, device)
+        print("\nEvaluating on validation set...")
+        accuracy = evaluate(model, val_loader, criterion, device)
         
         # Save checkpoint
         if (epoch + 1) % args.save_freq == 0:
