@@ -183,10 +183,13 @@ Epoch 1: 100%|██████████| 1563/1563 [05:23<00:00, 4.85it/s]
 
 Evaluating on test set...
 Evaluating: 100%|██████████| 313/313 [00:45<00:00, 6.89it/s]
-
 Test set: Average loss: 4.605, Accuracy: 1.00%
-New best accuracy: 1.00%
-Current learning rate: 0.100000
+
+Epoch 73/100: 100%|██████████| 990/990 [11:36<00:00,  1.42it/s, loss=1.711, acc=44.66%, lr=0.000206]
+Evaluating: 100%|██████████| 40/40 [00:24<00:00,  1.66it/s, loss=0.011, acc=83.88%]
+Test set: Average loss: 0.011, Accuracy: 83.88%
+💾 Checkpoint saved at epoch 73
+⏳ No improvement for 5 epochs. Best accuracy: 84.20%
 ```
 
 ## 🎯 Expected Results
