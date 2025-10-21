@@ -53,6 +53,8 @@ def test_transforms():
     MEAN = [0.485, 0.456, 0.4068]
     STD = [0.229, 0.224, 0.225]
     return transforms.Compose([
+        transforms.Resize(256),              # Resize the shorter side to 256
+        transforms.CenterCrop(224), 
         transforms.ToTensor(),
         transforms.Normalize(MEAN, STD)
     ])
