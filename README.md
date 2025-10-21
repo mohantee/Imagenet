@@ -103,7 +103,7 @@ python src/main.py --data_dir ./imagenet100
 ### Advanced Training Options
 ```bash
 python src/main.py \
-    --data_dir ./mini-imagenet \
+    --data_dir ./imagenet-100 \
     --batch_size 64 \
     --epochs 100 \
     --lr 0.01 \
@@ -117,7 +117,7 @@ python src/main.py \
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--data_dir` | `./mini-imagenet` | Path to Mini-ImageNet dataset |
+| `--data_dir` | `./imagenet-100` | Path to 100-ImageNet dataset |
 | `--batch_size` | `32` | Training batch size |
 | `--epochs` | `100` | Number of training epochs |
 | `--lr` | `0.1` | Initial learning rate |
@@ -220,7 +220,7 @@ python src/main.py --num_workers 8
 **3. Dataset Not Found**
 ```bash
 # Re-download dataset
-python download_mini_imagenet.py
+python download_imagenet100.py
 ```
 
 **4. Import Errors**
@@ -257,9 +257,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - **ResNet Paper**: Deep Residual Learning for Image Recognition (He et al., 2016)
-- **Mini-ImageNet**: Few-Shot Learning with Mini-ImageNet (Vinyals et al., 2016)
+- **ImageNet-100**: Few-Shot Learning with 100-ImageNet (Vinyals et al., 2016)
 - **Mixup**: Beyond Empirical Risk Minimization (Zhang et al., 2017)
-- **Hugging Face**: For providing the Mini-ImageNet dataset
+- **Hugging Face**: For providing the 100-ImageNet dataset
 
 ## 📞 Support
 
