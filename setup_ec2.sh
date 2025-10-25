@@ -13,8 +13,8 @@ if lspci | grep -i nvidia > /dev/null; then
 fi
 
 # Create a virtual environment
-python3 -m pip install --user virtualenv
-python3 -m virtualenv venv
+sudo apt-get install -y python3-venv
+python3 -m venv venv
 source venv/bin/activate
 
 # Install project dependencies
