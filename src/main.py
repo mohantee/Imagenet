@@ -11,6 +11,10 @@ import numpy as np
 import boto3
 import logging
 import time
+import json
+import hashlib
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from botocore.config import Config
 from botocore.exceptions import ClientError
 import tempfile
 from pathlib import Path
@@ -20,34 +24,129 @@ from train import train, train_transforms, test_transforms, mixup_data, mixup_cr
 from test import evaluate
 
 
-def download_from_s3(bucket_name, s3_path, local_path):
+def get_s3_client():
+    """Create an S3 client with optimized configuration."""
+    config = Config(
+        max_pool_connections=50,  # Increase connection pool
+        retries=dict(max_attempts=3),  # Retry failed requests
+        read_timeout=60,  # Longer timeout for large files
+        connect_timeout=60
+    )
+    return boto3.client('s3', config=config)
+
+def load_cache_metadata(cache_dir):
+    """Load cached file metadata."""
+    cache_file = os.path.join(cache_dir, '.cache_metadata.json')
+    if os.path.exists(cache_file):
+        with open(cache_file, 'r') as f:
+            return json.load(f)
+    return {}
+
+def save_cache_metadata(cache_dir, metadata):
+    """Save cached file metadata."""
+    cache_file = os.path.join(cache_dir, '.cache_metadata.json')
+    with open(cache_file, 'w') as f:
+        json.dump(metadata, f)
+
+def download_file_if_needed(args):
+    """Download a single file from S3 if needed."""
+    bucket_name, s3_key, local_path, etag = args
+    
+    # Check if file exists and matches ETag
+    if os.path.exists(local_path):
+        with open(local_path, 'rb') as f:
+            content = f.read()
+            file_hash = hashlib.md5(content).hexdigest()
+            if file_hash == etag.strip('"'):
+                return None  # File is up to date
+    
+    try:
+        s3_client = get_s3_client()
+        os.makedirs(os.path.dirname(local_path), exist_ok=True)
+        s3_client.download_file(bucket_name, s3_key, local_path)
+        return s3_key
+    except Exception as e:
+        logging.error(f"Error downloading {s3_key}: {e}")
+        return None
+
+def download_from_s3(bucket_name, s3_path, local_path, max_workers=16):
     """
-    Download data from S3 bucket to local path.
+    Download data from S3 bucket to local path with parallel processing and caching.
     
     Args:
         bucket_name: Name of the S3 bucket
         s3_path: Path within the S3 bucket
         local_path: Local path to save the data
+        max_workers: Maximum number of concurrent downloads
     """
-    s3_client = boto3.client('s3')
+    s3_client = get_s3_client()
+    
     try:
         # Ensure local directory exists
         os.makedirs(os.path.dirname(local_path), exist_ok=True)
         
-        # Download file
-        s3_client.download_file(bucket_name, s3_path, local_path)
-        logging.info(f"Successfully downloaded {s3_path} to {local_path}")
-    except ClientError as e:
-        logging.error(f"Error downloading from S3: {e}")
+        # Load cache metadata
+        cache_metadata = load_cache_metadata(os.path.dirname(local_path))
+        
+        # List all objects and prepare download tasks
+        paginator = s3_client.get_paginator('list_objects_v2')
+        download_tasks = []
+        
+        for page in paginator.paginate(Bucket=bucket_name, Prefix=s3_path):
+            if 'Contents' not in page:
+                continue
+                
+            for obj in page['Contents']:
+                if obj['Key'].endswith('/'):
+                    continue
+                    
+                local_file_path = os.path.join(
+                    local_path,
+                    os.path.relpath(obj['Key'], s3_path)
+                )
+                
+                # Add to download tasks if file needs updating
+                etag = obj['ETag']
+                cache_key = f"{bucket_name}:{obj['Key']}"
+                if cache_key not in cache_metadata or cache_metadata[cache_key] != etag:
+                    download_tasks.append((bucket_name, obj['Key'], local_file_path, etag))
+                    cache_metadata[cache_key] = etag
+        
+        # Download files in parallel
+        downloaded_files = []
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_file = {
+                executor.submit(download_file_if_needed, task): task
+                for task in download_tasks
+            }
+            
+            for future in tqdm(as_completed(future_to_file), 
+                             total=len(download_tasks),
+                             desc="Downloading files"):
+                result = future.result()
+                if result:
+                    downloaded_files.append(result)
+        
+        # Save updated cache metadata
+        save_cache_metadata(os.path.dirname(local_path), cache_metadata)
+        
+        if downloaded_files:
+            logging.info(f"Downloaded {len(downloaded_files)} new or updated files")
+        else:
+            logging.info("All files are up to date")
+            
+    except Exception as e:
+        logging.error(f"Error during S3 download: {e}")
         raise
 
-def get_imagenet100_dataset(bucket_name, s3_prefix, local_dir, train=True, augment=False):
+def get_imagenet100_dataset(bucket_name, train_folder, val_folder, local_dir, train=True, augment=False):
     """
-    Load ImageNet-100 dataset from S3.
+    Load ImageNet-100 dataset from S3 with optimized downloading.
     
     Args:
         bucket_name: Name of the S3 bucket containing the dataset
-        s3_prefix: Prefix path in the S3 bucket
+        train_folder: Full path to training data folder in S3 bucket
+        val_folder: Full path to validation data folder in S3 bucket
         local_dir: Local directory to cache the dataset
         train: If True, load training set; if False, load validation set
         augment: If True, apply data augmentation for training
@@ -56,36 +155,24 @@ def get_imagenet100_dataset(bucket_name, s3_prefix, local_dir, train=True, augme
         ImageFolder dataset
     """
     # Set up paths
-    split = 'train' if train else 'val'
-    s3_path = f"{s3_prefix}/{split}"
-    local_path = os.path.join(local_dir, split)
+    s3_path = train_folder if train else val_folder
+    local_path = os.path.join(local_dir, 'train' if train else 'val')
     
-    # Create local cache directory if it doesn't exist
-    os.makedirs(local_path, exist_ok=True)
+    # Download data with optimized parallel downloading and caching
+    logging.info(f"Checking and downloading {'training' if train else 'validation'} dataset...")
+    download_from_s3(
+        bucket_name=bucket_name,
+        s3_path=s3_path,
+        local_path=local_path,
+        max_workers=16  # Adjust based on available CPU cores and network bandwidth
+    )
     
-    # List all objects in the S3 path
-    s3_client = boto3.client('s3')
-    paginator = s3_client.get_paginator('list_objects_v2')
+    # Set up transforms
+    transform = train_transforms(augment=augment) if train else test_transforms()
     
-    # Download all files from S3
-    for page in paginator.paginate(Bucket=bucket_name, Prefix=s3_path):
-        if 'Contents' not in page:
-            continue
-            
-        for obj in page['Contents']:
-            # Skip directories
-            if obj['Key'].endswith('/'):
-                continue
-                
-            # Get relative path and create local directory structure
-            rel_path = obj['Key'][len(s3_path):].lstrip('/')
-            local_file_path = os.path.join(local_path, rel_path)
-            os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-            
-            # Download if file doesn't exist locally
-            if not os.path.exists(local_file_path):
-                logging.info(f"Downloading {obj['Key']} to {local_file_path}")
-                s3_client.download_file(bucket_name, obj['Key'], local_file_path)
+    # Create dataset
+    dataset = ImageFolder(local_path, transform=transform)
+    return dataset
     
     # Set up transforms
     transform = train_transforms(augment=augment) if train else test_transforms()
@@ -95,13 +182,14 @@ def get_imagenet100_dataset(bucket_name, s3_prefix, local_dir, train=True, augme
     return dataset
 
 
-def create_data_loaders(bucket_name, s3_prefix, local_dir, batch_size=32, num_workers=4, augment=True):
+def create_data_loaders(bucket_name, train_folder, val_folder, local_dir, batch_size=32, num_workers=4, augment=True):
     """
     Create training and validation data loaders for ImageNet-100 from S3.
     
     Args:
         bucket_name: Name of the S3 bucket containing the dataset
-        s3_prefix: Prefix path in the S3 bucket
+        train_folder: Full path to training data folder in S3 bucket
+        val_folder: Full path to validation data folder in S3 bucket
         local_dir: Local directory to cache the dataset
         batch_size: Batch size for data loaders
         num_workers: Number of worker processes for data loading
@@ -112,9 +200,9 @@ def create_data_loaders(bucket_name, s3_prefix, local_dir, batch_size=32, num_wo
     """
     # Load datasets
     logging.info("Loading training dataset from S3...")
-    train_dataset = get_imagenet100_dataset(bucket_name, s3_prefix, local_dir, train=True, augment=augment)
+    train_dataset = get_imagenet100_dataset(bucket_name, train_folder, val_folder, local_dir, train=True, augment=augment)
     logging.info("Loading validation dataset from S3...")
-    val_dataset = get_imagenet100_dataset(bucket_name, s3_prefix, local_dir, train=False, augment=False)
+    val_dataset = get_imagenet100_dataset(bucket_name, train_folder, val_folder, local_dir, train=False, augment=False)
     
     # Get number of classes
     num_classes = len(train_dataset.classes)
@@ -250,8 +338,10 @@ def main():
     # S3 Dataset Arguments
     parser.add_argument('--bucket_name', type=str, required=True,
                         help='Name of the S3 bucket containing the dataset')
-    parser.add_argument('--s3_prefix', type=str, default='imagenet100',
-                        help='Prefix path in the S3 bucket (default: imagenet100)')
+    parser.add_argument('--train_folder', type=str, required=True,
+                        help='Full path to training data folder in S3 bucket')
+    parser.add_argument('--val_folder', type=str, required=True,
+                        help='Full path to validation data folder in S3 bucket')
     parser.add_argument('--local_dir', type=str, default='/tmp/imagenet100',
                         help='Local directory to cache the dataset (default: /tmp/imagenet100)')
     
@@ -307,7 +397,8 @@ def main():
     logging.info("Loading ImageNet-100 dataset from S3...")
     train_loader, val_loader, num_classes = create_data_loaders(
         args.bucket_name,
-        args.s3_prefix,
+        args.train_folder,
+        args.val_folder,
         args.local_dir,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
