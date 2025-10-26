@@ -49,7 +49,7 @@ def save_cache_metadata(cache_dir, metadata):
         json.dump(metadata, f)
 
 def download_file_if_needed(args):
-    """Download a single file from S3 if needed."""
+    """Download a single file from S3 if needed using parallel chunk downloads."""
     bucket_name, s3_key, local_path, etag = args
     
     # Check if file exists and matches ETag
@@ -258,15 +258,15 @@ def save_checkpoint(model, optimizer, scheduler, epoch, accuracy, filepath, buck
     torch.save(checkpoint, filepath)
     logging.info(f"Checkpoint saved locally to {filepath}")
     
-    # Upload to S3 if specified
-    if bucket_name and s3_key:
-        try:
-            s3_client = boto3.client('s3')
-            s3_client.upload_file(filepath, bucket_name, s3_key)
-            logging.info(f"Checkpoint uploaded to s3://{bucket_name}/{s3_key}")
-        except ClientError as e:
-            logging.error(f"Error uploading checkpoint to S3: {e}")
-            raise
+    # # Upload to S3 if specified
+    # if bucket_name and s3_key:
+    #     try:
+    #         s3_client = boto3.client('s3')
+    #         s3_client.upload_file(filepath, bucket_name, s3_key)
+    #         logging.info(f"Checkpoint uploaded to s3://{bucket_name}/{s3_key}")
+    #     except ClientError as e:
+    #         logging.error(f"Error uploading checkpoint to S3: {e}")
+    #         raise
 
 
 def load_checkpoint(filepath, model, optimizer=None, scheduler=None, bucket_name=None, s3_key=None):
