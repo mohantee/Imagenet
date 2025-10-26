@@ -401,12 +401,11 @@ def main():
         parser.error("--bucket_name is required when using --use_s3")
 
     # Set device
-    if args.device == "auto":
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    else:
-        device = torch.device(args.device)
 
-    print(f"Using device: {device}")
+    device = torch.device("cuda")
+    logging.info(f"Automatically selected device: {device}")
+
+    logging.info(f"Using device: {device}")
 
     # Create save directory
     os.makedirs(args.save_dir, exist_ok=True)
