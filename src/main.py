@@ -23,6 +23,167 @@ from model import ResNet50
 from train import train, train_transforms, test_transforms, mixup_data, mixup_criterion
 from test import evaluate
 
+# --- add to imports at top of main.py ---
+from torch.cuda.amp import GradScaler, autocast
+
+
+def train_mixed_precision(
+    model,
+    train_loader,
+    criterion,
+    optimizer,
+    scheduler,
+    device,
+    epoch,
+    scaler=None,
+    use_mixed_precision=False,
+    precision_type="fp16",
+):
+    """
+    Optimized training function with mixed precision support.
+
+    Args:
+        model: Neural network model
+        train_loader: Training data loader
+        criterion: Loss function
+        optimizer: Optimizer
+        scheduler: Learning rate scheduler
+        device: Training device (cuda/cpu)
+        epoch: Current epoch number
+        scaler: Gradient scaler for mixed precision
+        use_mixed_precision: Whether to use mixed precision
+        precision_type: fp16 or bf16
+    """
+    model.train()
+    running_loss = 0.0
+    correct = 0
+    total = 0
+    GRAD_CLIP = 1.0
+
+    # Determine autocast dtype
+    if use_mixed_precision:
+        autocast_dtype = torch.float16 if precision_type == "fp16" else torch.bfloat16
+
+    pbar = tqdm(train_loader, desc=f"Epoch {epoch + 1}")
+    for batch_idx, (inputs, targets) in enumerate(pbar):
+        inputs, targets = inputs.to(device, non_blocking=True), targets.to(device, non_blocking=True)
+
+        # Apply mixup augmentation
+        inputs, targets_a, targets_b, lam = mixup_data(inputs, targets, device=device)
+
+        # Zero gradients
+        optimizer.zero_grad()
+
+        if use_mixed_precision and scaler is not None:
+            # Mixed precision forward pass
+            with autocast(dtype=autocast_dtype, enabled=True):
+                outputs = model(inputs)
+                loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
+
+            # Backward pass with gradient scaling
+            scaler.scale(loss).backward()
+
+            # Unscale gradients for clipping
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
+
+            # Optimizer step with scaler
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            # Standard precision training
+            outputs = model(inputs)
+            loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
+
+            # Backward pass
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
+            optimizer.step()
+
+        scheduler.step()
+
+        # Statistics
+        running_loss += loss.item()
+        _, predicted = outputs.max(1)
+        total += targets.size(0)
+        correct += predicted.eq(targets).sum().item()
+
+        # Update progress bar
+        current_lr = optimizer.param_groups[0]["lr"]
+        pbar.set_postfix(
+            {
+                "loss": f"{running_loss / (batch_idx + 1):.3f}",
+                "acc": f"{100.0 * correct / total:.2f}%",
+                "lr": f"{current_lr:.6f}",
+                "mp": "🚀" if use_mixed_precision else "📊",
+            }
+        )
+
+    epoch_loss = running_loss / len(train_loader)
+    epoch_acc = 100.0 * correct / total
+
+    print(f"Training: Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.2f}%")
+    return epoch_loss, epoch_acc
+
+
+def evaluate_mixed_precision(model, val_loader, criterion, device, use_mixed_precision=False, precision_type="fp16"):
+    """
+    Optimized evaluation function with mixed precision support.
+
+    Args:
+        model: Neural network model
+        val_loader: Validation data loader
+        criterion: Loss function
+        device: Device (cuda/cpu)
+        use_mixed_precision: Whether to use mixed precision
+        precision_type: fp16 or bf16
+
+    Returns:
+        accuracy: Validation accuracy
+    """
+    model.eval()
+    correct = 0
+    total = 0
+    test_loss = 0.0
+
+    # Determine autocast dtype
+    if use_mixed_precision:
+        autocast_dtype = torch.float16 if precision_type == "fp16" else torch.bfloat16
+
+    with torch.no_grad():
+        pbar = tqdm(val_loader, desc="Evaluating")
+        for inputs, targets in pbar:
+            inputs, targets = inputs.to(device, non_blocking=True), targets.to(device, non_blocking=True)
+
+            if use_mixed_precision:
+                # Mixed precision inference
+                with autocast(dtype=autocast_dtype, enabled=True):
+                    outputs = model(inputs)
+                    loss = criterion(outputs, targets)
+            else:
+                # Standard precision inference
+                outputs = model(inputs)
+                loss = criterion(outputs, targets)
+
+            # Statistics
+            test_loss += loss.item()
+            _, predicted = outputs.max(1)
+            total += targets.size(0)
+            correct += predicted.eq(targets).sum().item()
+
+            # Update progress bar
+            pbar.set_postfix(
+                {
+                    "loss": f"{test_loss / total:.3f}",
+                    "acc": f"{100.0 * correct / total:.2f}%",
+                    "mp": "🚀" if use_mixed_precision else "📊",
+                }
+            )
+
+    accuracy = 100.0 * correct / total
+    print(f"Validation: Loss: {test_loss / total:.3f}, Accuracy: {accuracy:.2f}%")
+    return accuracy
+
 
 def get_s3_client():
     """Create an S3 client with optimized configuration."""
@@ -221,8 +382,8 @@ def create_data_loaders(
 
     # Get number of classes
     num_classes = len(train_dataset.classes)
-    print(f"Number of classes: {num_classes}")
-    print(f"Training samples: {len(train_dataset)}")
+    logging.info(f"Number of classes: {num_classes}")
+    logging.info(f"Training samples: {len(train_dataset)}")
     print(f"Validation samples: {len(val_dataset)}")
 
     # Create data loaders
@@ -318,7 +479,7 @@ def load_checkpoint(filepath, model, optimizer=None, scheduler=None, bucket_name
     accuracy = checkpoint["accuracy"]
 
     logging.info(f"Checkpoint loaded from {filepath}")
-    logging.info(f"Resuming from epoch {epoch}, accuracy: {accuracy:.2f}%")
+    (f"Resuming from epoch {epoch}, accuracy: {accuracy:.2f}%")
 
     return epoch, accuracy
 
@@ -333,7 +494,7 @@ def setup_logging(log_dir):
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
     )
-    logging.info(f"Logging to {log_file}")
+    print(f"Logging to {log_file}")
 
 
 def main():
@@ -382,7 +543,7 @@ def main():
 
     # Logging Arguments
     parser.add_argument("--log_dir", type=str, default="./logs", help="Directory for log files (default: ./logs)")
-    parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training (default: 32)")
+    parser.add_argument("--batch_size", type=int, default=256, help="Batch size for training (default: 32)")
     parser.add_argument("--epochs", type=int, default=100, help="Number of epochs to train (default: 100)")
     parser.add_argument("--lr", type=float, default=0.1, help="Initial learning rate (default: 0.1)")
     parser.add_argument("--momentum", type=float, default=0.9, help="SGD momentum (default: 0.9)")
@@ -391,8 +552,18 @@ def main():
     parser.add_argument("--device", type=str, default="auto", help="Device to use (cuda/cpu/auto)")
     parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume from")
     parser.add_argument("--save_dir", type=str, default="./checkpoints", help="Directory to save checkpoints")
-    parser.add_argument("--save_freq", type=int, default=10, help="Save checkpoint every N epochs")
+    parser.add_argument("--save_freq", type=int, default=5, help="Save checkpoint every N epochs")
     parser.add_argument("--no_augment", action="store_true", help="Disable data augmentation")
+
+    # Mixed Precision Training Arguments
+    parser.add_argument("--mixed_precision", action="store_true", help="Enable mixed precision training (FP16/BF16)")
+    parser.add_argument(
+        "--precision_type",
+        type=str,
+        default="fp16",
+        choices=["fp16", "bf16"],
+        help="Precision type for mixed precision training (default: fp16)",
+    )
 
     args = parser.parse_args()
 
@@ -436,14 +607,14 @@ def main():
     )
 
     # Create model
-    print("Creating ResNet-50 model...")
+    logging.info("Creating ResNet-50 model...")
     model = ResNet50(num_classes=num_classes).to(device)
 
-    # Print model info
+    # logging.info model info
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"Total parameters: {total_params:,}")
-    print(f"Trainable parameters: {trainable_params:,}")
+    logging.info(f"Total parameters: {total_params:,}")
+    logging.info(f"Trainable parameters: {trainable_params:,}")
 
     # Loss function and optimizer
     criterion = nn.CrossEntropyLoss()
@@ -451,6 +622,19 @@ def main():
 
     # Learning rate scheduler
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+
+    # Mixed Precision Training Setup
+    scaler = None
+    if args.mixed_precision:
+        if args.precision_type == "bf16" and not torch.cuda.is_bf16_supported():
+            print("Warning: BF16 not supported on this GPU, falling back to FP16")
+            args.precision_type = "fp16"
+
+        scaler = GradScaler()
+        print(f"🚀 Mixed precision training enabled with {args.precision_type.upper()}")
+        print(f"   Expected benefits: ~2x speedup, ~50% memory reduction")
+    else:
+        print("📊 Standard FP32 precision training")
 
     # Resume from checkpoint if specified
     start_epoch = 0
@@ -468,19 +652,37 @@ def main():
         start_epoch += 1  # Resume from next epoch
 
     # Training loop
-    print(f"\nStarting training for {args.epochs} epochs...")
-    print(f"Training from epoch {start_epoch + 1} to {args.epochs}")
+    logging.info(f"\nStarting training for {args.epochs} epochs...")
+    logging.info(f"Training from epoch {start_epoch + 1} to {args.epochs}")
 
     for epoch in range(start_epoch, args.epochs):
-        print(f"\nEpoch {epoch + 1}/{args.epochs}")
-        print("-" * 50)
+        logging.info(f"\nEpoch {epoch + 1}/{args.epochs}")
+        logging.info("-" * 50)
 
-        # Train
-        train(model, train_loader, criterion, optimizer, scheduler, device, epoch)
+        # Train with mixed precision support
+        train_mixed_precision(
+            model,
+            train_loader,
+            criterion,
+            optimizer,
+            scheduler,
+            device,
+            epoch,
+            scaler=scaler,
+            use_mixed_precision=args.mixed_precision,
+            precision_type=args.precision_type,
+        )
 
-        # Evaluate
-        print("\nEvaluating on validation set...")
-        accuracy = evaluate(model, val_loader, criterion, device)
+        # Evaluate with mixed precision support
+        logging.info("\nEvaluating on validation set...")
+        accuracy = evaluate_mixed_precision(
+            model,
+            val_loader,
+            criterion,
+            device,
+            use_mixed_precision=args.mixed_precision,
+            precision_type=args.precision_type,
+        )
 
         # Save checkpoint
         if (epoch + 1) % args.save_freq == 0:
@@ -512,12 +714,12 @@ def main():
                 bucket_name=args.checkpoint_bucket,
                 s3_key=f"{args.checkpoint_prefix}/{best_model_name}",
             )
-            print(f"New best accuracy: {best_accuracy:.2f}%")
+            logging.info(f"New best accuracy: {best_accuracy:.2f}%")
 
-        print(f"Current learning rate: {optimizer.param_groups[0]['lr']:.6f}")
+        logging.info(f"Current learning rate: {optimizer.param_groups[0]['lr']:.6f}")
 
-    print("\nTraining completed!")
-    print(f"Best accuracy: {best_accuracy:.2f}%")
+    logging.info("\nTraining completed!")
+    logging.info(f"Best accuracy: {best_accuracy:.2f}%")
 
 
 if __name__ == "__main__":
