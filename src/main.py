@@ -24,7 +24,7 @@ from train import train, train_transforms, test_transforms, mixup_data, mixup_cr
 from test import evaluate
 
 # --- add to imports at top of main.py ---
-from torch.cuda.amp import GradScaler, autocast
+from torch.amp import GradScaler, autocast
 
 
 def train_mixed_precision(
@@ -76,7 +76,7 @@ def train_mixed_precision(
 
         if use_mixed_precision and scaler is not None:
             # Mixed precision forward pass
-            with autocast(dtype=autocast_dtype, enabled=True):
+            with autocast("cuda", dtype=autocast_dtype, enabled=True):
                 outputs = model(inputs)
                 loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
 
@@ -157,7 +157,7 @@ def evaluate_mixed_precision(model, val_loader, criterion, device, use_mixed_pre
 
             if use_mixed_precision:
                 # Mixed precision inference
-                with autocast(dtype=autocast_dtype, enabled=True):
+                with autocast("cuda", dtype=autocast_dtype, enabled=True):
                     outputs = model(inputs)
                     loss = criterion(outputs, targets)
             else:
@@ -479,7 +479,7 @@ def load_checkpoint(filepath, model, optimizer=None, scheduler=None, bucket_name
     accuracy = checkpoint["accuracy"]
 
     logging.info(f"Checkpoint loaded from {filepath}")
-    (f"Resuming from epoch {epoch}, accuracy: {accuracy:.2f}%")
+    logging.info(f"Resuming from epoch {epoch}, accuracy: {accuracy:.2f}%")
 
     return epoch, accuracy
 
@@ -489,12 +489,18 @@ def setup_logging(log_dir):
     os.makedirs(log_dir, exist_ok=True)
     log_file = os.path.join(log_dir, f"training_{time.strftime('%Y%m%d_%H%M%S')}.log")
 
+    # Clear any existing handlers
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
+        force=True,  # Force reconfiguration
     )
     logging.info(f"Logging to {log_file}")
+    print(f"Logging initialized - output will be saved to: {log_file}")
 
 
 def main():
@@ -571,18 +577,20 @@ def main():
     if args.use_s3 and not args.bucket_name:
         parser.error("--bucket_name is required when using --use_s3")
 
-    # Set device
-
-    device = torch.device("cuda")
-    logging.info(f"Automatically selected device: {device}")
-
-    logging.info(f"Using device: {device}")
-
     # Create save directory
     os.makedirs(args.save_dir, exist_ok=True)
 
     # Set up logging
     setup_logging(args.log_dir)
+
+    # Test logging is working
+    logging.info("=== TRAINING SESSION STARTED ===")
+    logging.info(f"Arguments: {vars(args)}")
+
+    # Set device
+    device = torch.device("cuda")
+    logging.info(f"Automatically selected device: {device}")
+    logging.info(f"Using device: {device}")
 
     # Create data loaders
     if args.use_s3:
@@ -630,9 +638,9 @@ def main():
             logging.info("Warning: BF16 not supported on this GPU, falling back to FP16")
             args.precision_type = "fp16"
 
-        scaler = GradScaler()
+        scaler = GradScaler("cuda")
         logging.info(f"🚀 Mixed precision training enabled with {args.precision_type.upper()}")
-        logging.info(f"   Expected benefits: ~2x speedup, ~50% memory reduction")
+        logging.info("   Expected benefits: ~2x speedup, ~50% memory reduction")
     else:
         logging.info("📊 Standard FP32 precision training")
 
