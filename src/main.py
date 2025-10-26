@@ -122,7 +122,7 @@ def train_mixed_precision(
     epoch_loss = running_loss / len(train_loader)
     epoch_acc = 100.0 * correct / total
 
-    print(f"Training: Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.2f}%")
+    logging.info(f"Training: Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.2f}%")
     return epoch_loss, epoch_acc
 
 
@@ -181,7 +181,7 @@ def evaluate_mixed_precision(model, val_loader, criterion, device, use_mixed_pre
             )
 
     accuracy = 100.0 * correct / total
-    print(f"Validation: Loss: {test_loss / total:.3f}, Accuracy: {accuracy:.2f}%")
+    logging.info(f"Validation: Loss: {test_loss / total:.3f}, Accuracy: {accuracy:.2f}%")
     return accuracy
 
 
@@ -384,7 +384,7 @@ def create_data_loaders(
     num_classes = len(train_dataset.classes)
     logging.info(f"Number of classes: {num_classes}")
     logging.info(f"Training samples: {len(train_dataset)}")
-    print(f"Validation samples: {len(val_dataset)}")
+    logging.info(f"Validation samples: {len(val_dataset)}")
 
     # Create data loaders
     train_loader = DataLoader(
@@ -494,7 +494,7 @@ def setup_logging(log_dir):
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
     )
-    print(f"Logging to {log_file}")
+    logging.info(f"Logging to {log_file}")
 
 
 def main():
@@ -627,14 +627,14 @@ def main():
     scaler = None
     if args.mixed_precision:
         if args.precision_type == "bf16" and not torch.cuda.is_bf16_supported():
-            print("Warning: BF16 not supported on this GPU, falling back to FP16")
+            logging.info("Warning: BF16 not supported on this GPU, falling back to FP16")
             args.precision_type = "fp16"
 
         scaler = GradScaler()
-        print(f"🚀 Mixed precision training enabled with {args.precision_type.upper()}")
-        print(f"   Expected benefits: ~2x speedup, ~50% memory reduction")
+        logging.info(f"🚀 Mixed precision training enabled with {args.precision_type.upper()}")
+        logging.info(f"   Expected benefits: ~2x speedup, ~50% memory reduction")
     else:
-        print("📊 Standard FP32 precision training")
+        logging.info("📊 Standard FP32 precision training")
 
     # Resume from checkpoint if specified
     start_epoch = 0

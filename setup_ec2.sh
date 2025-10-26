@@ -58,9 +58,9 @@ mkdir -p checkpoints
 echo "Setup completed successfully!"
 echo "To activate the environment, run: . ./activate_env.sh"
 
-#Reboot
-sudo reboot
+#Reboot Manual 
+#udo reboot
 
-nvidia-smi
-ldconfig -p | grep libcuda
-apt policy libnvidia-compute-535
+#vidia-smi
+#dconfig -p | grep libcuda
+#pt policy libnvidia-compute-535
