@@ -36,6 +36,8 @@ def train_transforms(augment: bool = False):
         ])
     else:
         return transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
             transforms.ToTensor(),
             transforms.Normalize(MEAN, STD)
         ])
