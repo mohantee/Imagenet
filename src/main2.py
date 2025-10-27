@@ -246,6 +246,7 @@ def main():
             best_acc = ckpt["accuracy"]
 
     for epoch in range(start_epoch, args.epochs):
+        start_ts = time.perf_counter()
         train_epoch(model, train_loader, criterion, optimizer, scheduler, device, scaler, args.mixed_precision, dtype, epoch)
         acc = evaluate_epoch(model, val_loader, criterion, device, args.mixed_precision, dtype)
 
@@ -260,7 +261,7 @@ def main():
             name = f"checkpoint_epoch_{epoch+1}.pth" if acc <= best_acc else "best_model.pth"
             storage.save_checkpoint(ckpt, name)
             best_acc = max(best_acc, acc)
-            logging.info(f"Saved checkpoint ({name}) with acc={acc:.2f}")
+            logging.info(f"Saved checkpoint ({name}) with acc={acc:.2f}, time={(time.perf_counter() - start_ts)/60} mins")
 
     logging.info(f"Training completed. Best accuracy: {best_acc:.2f}%")
 
