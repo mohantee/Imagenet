@@ -137,12 +137,12 @@ def train_epoch(model, loader, criterion, optimizer, scheduler, device, scaler, 
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
 
-        scheduler.step()
         running_loss += loss.item()
         _, pred = out.max(1)
         total += y.size(0)
         correct += pred.eq(y).sum().item()
-
+        
+        scheduler.step()
         pbar.set_postfix(loss=running_loss/(total/loader.batch_size), acc=f"{100*correct/total:.2f}%")
 
     return running_loss/len(loader), 100*correct/total
