@@ -59,7 +59,7 @@ echo "Setup completed successfully!"
 echo "To activate the environment, run: . ./activate_env.sh"
 
 #Reboot Manual 
-#udo reboot
+sudo reboot
 
 #vidia-smi
 #dconfig -p | grep libcuda

@@ -63,7 +63,7 @@ def test_transforms():
 
 
 # Mixup augmentation
-def mixup_data(x, y, alpha=0.2, device='cuda'):
+def mixup_data(x, y, alpha=0.4, device='cuda'):
     if alpha > 0:
         lam = np.random.beta(alpha, alpha)
     else:

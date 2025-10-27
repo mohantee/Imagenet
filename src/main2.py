@@ -206,6 +206,8 @@ def main():
     p.add_argument("--save_freq", type=int, default=5)
     p.add_argument("--mixed_precision", action="store_true")
     p.add_argument("--precision_type", choices=["fp16", "bf16"], default="fp16")
+    p.add_argument("--max_lr", type=float, default=2e-3)
+    p.add_argument("--weight_decay", type=float, default=2e-4)
     args = p.parse_args()
 
     os.makedirs(args.checkpoint_prefix, exist_ok=True)
@@ -229,8 +231,23 @@ def main():
     )
 
     model = ResNet50(num_classes=num_classes).to(device)
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-4)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    # optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-4)
+    # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    optimizer = optim.AdamW(model.parameters(),lr=args.max_lr, weight_decay=args.weight_decay,betas=(0.9, 0.999))
+    
+    scheduler = optim.lr_scheduler.OneCycleLR(
+        optimizer,
+        max_lr=args.max_lr,
+        steps_per_epoch=len(train_loader),
+        epochs=args.epochs,
+        pct_start=0.15,  # 15% warmup
+        anneal_strategy='cos',
+        cycle_momentum=True,
+        base_momentum=0.85,
+        max_momentum=0.95,
+        div_factor=25.0,
+        final_div_factor=1000.0
+    )
     criterion = nn.CrossEntropyLoss()
     dtype = torch.float16 if args.precision_type == "fp16" else torch.bfloat16
     scaler = GradScaler("cuda") if args.mixed_precision else None
