@@ -5,20 +5,27 @@ from tqdm import tqdm
 import os
 from model import ResNet50
 
-def evaluate(model, test_loader, criterion, device):
+def evaluate(model, test_loader, criterion, device, use_mixed_precision=False, dtype=torch.float16):
     model.eval()
     correct = 0
     total = 0
     test_loss = 0.0
+
+    # Check CUDA availability for mixed precision
+    if use_mixed_precision and not torch.cuda.is_available():
+        print("Warning: CUDA is not available. Mixed precision evaluation will be disabled.")
+        use_mixed_precision = False
 
     with torch.no_grad():
         pbar = tqdm(test_loader, desc='Evaluating')
         for inputs, targets in pbar:
             inputs, targets = inputs.to(device), targets.to(device)
             
-            # Forward pass
-            outputs = model(inputs)
-            loss = criterion(outputs, targets)
+            # Mixed precision context for evaluation
+            with torch.cuda.amp.autocast(enabled=use_mixed_precision, dtype=dtype):
+                # Forward pass
+                outputs = model(inputs)
+                loss = criterion(outputs, targets)
             
             # Statistics
             test_loss += loss.item()

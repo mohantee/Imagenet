@@ -22,8 +22,8 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 
 from model import ResNet50
-from train import train_transforms, test_transforms, mixup_data, mixup_criterion
-from torch.amp import GradScaler, autocast
+from train import train_transforms, test_transforms
+from torch.amp import GradScaler
 
 # -------------------------------------------------------------------
 # Storage Handler: single class for S3 / Local storage operations
@@ -108,61 +108,10 @@ class StorageHandler:
 
 
 # -------------------------------------------------------------------
-# Training and evaluation (mixed precision capable)
+# Training and evaluation (using train.py and test.py modules)
 # -------------------------------------------------------------------
-def train_epoch(model, loader, criterion, optimizer, scheduler, device, scaler, mp, dtype, epoch):
-    model.train()
-    total, correct, running_loss = 0, 0, 0.0
-    pbar = tqdm(loader, desc=f"Epoch {epoch+1}")
-
-    for x, y in pbar:
-        x, y = x.to(device), y.to(device)
-        x, ya, yb, lam = mixup_data(x, y, device=device)
-
-        optimizer.zero_grad()
-        ctx = autocast("cuda", dtype=dtype, enabled=mp)
-
-        with ctx:
-            out = model(x)
-            loss = mixup_criterion(criterion, out, ya, yb, lam)
-
-        if mp:
-            scaler.scale(loss).backward()
-            scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            scaler.step(optimizer)
-            scaler.update()
-        else:
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            optimizer.step()
-
-        running_loss += loss.item()
-        _, pred = out.max(1)
-        total += y.size(0)
-        correct += pred.eq(y).sum().item()
-        
-        scheduler.step()
-        pbar.set_postfix(loss=running_loss/(total/loader.batch_size), acc=f"{100*correct/total:.2f}%")
-
-    return running_loss/len(loader), 100*correct/total
-
-
-def evaluate_epoch(model, loader, criterion, device, mp, dtype):
-    model.eval()
-    total, correct, loss_total = 0, 0, 0
-    with torch.no_grad():
-        for x, y in loader:
-            x, y = x.to(device), y.to(device)
-            ctx = autocast("cuda", dtype=dtype, enabled=mp)
-            with ctx:
-                out = model(x)
-                loss = criterion(out, y)
-            loss_total += loss.item()
-            _, pred = out.max(1)
-            total += y.size(0)
-            correct += pred.eq(y).sum().item()
-    return 100 * correct / total
+from train import train as train_epoch
+from test import evaluate as evaluate_epoch
 
 
 # -------------------------------------------------------------------
@@ -203,7 +152,7 @@ def main():
     p.add_argument("--num_workers", type=int, default=4)
     p.add_argument("--lr", type=float, default=0.1)
     p.add_argument("--resume", type=str, default=None)
-    p.add_argument("--save_freq", type=int, default=5)
+    p.add_argument("--save_freq", type=int, default=3)
     p.add_argument("--mixed_precision", action="store_true")
     p.add_argument("--precision_type", choices=["fp16", "bf16"], default="fp16")
     p.add_argument("--max_lr", type=float, default=2e-3)
@@ -264,9 +213,19 @@ def main():
 
     for epoch in range(start_epoch, args.epochs):
         start_ts = time.perf_counter()
-        train_epoch(model, train_loader, criterion, optimizer, scheduler, device, scaler, args.mixed_precision, dtype, epoch)
-        acc = evaluate_epoch(model, val_loader, criterion, device, args.mixed_precision, dtype)
-
+        
+        # Train for one epoch
+        train_epoch(
+            model, train_loader, criterion, optimizer, scheduler, 
+            device, epoch, use_mixed_precision=args.mixed_precision, dtype=dtype
+        )
+        
+        # Evaluate
+        acc = evaluate_epoch(
+            model, val_loader, criterion, device, 
+            use_mixed_precision=args.mixed_precision, dtype=dtype
+        )
+        
         if (epoch + 1) % args.save_freq == 0 or acc > best_acc:
             ckpt = {
                 "epoch": epoch,
@@ -279,6 +238,8 @@ def main():
             storage.save_checkpoint(ckpt, name)
             best_acc = max(best_acc, acc)
             logging.info(f"Saved checkpoint ({name}) with acc={acc:.2f}, time={(time.perf_counter() - start_ts)/60} mins")
+
+        logging.info(f"Epoch {epoch+1} completed in {timedelta(seconds=int(time.perf_counter() - start_ts))}")
 
     logging.info(f"Training completed. Best accuracy: {best_acc:.2f}%")
 

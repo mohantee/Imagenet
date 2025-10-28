@@ -80,51 +80,67 @@ def mixup_criterion(criterion, pred, y_a, y_b, lam):
     return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
 
 
-def train(model, train_loader, criterion, optimizer, scheduler, device, epoch):
+def train(model, train_loader, criterion, optimizer, scheduler, device, epoch, use_mixed_precision=False, dtype=torch.float16):
     model.train()
     running_loss = 0.0
     correct = 0
     total = 0
     GRAD_CLIP = 1.0
     
-    pbar = tqdm(train_loader, desc=f'Epoch {epoch+1}')
+    # Initialize gradient scaler for mixed precision training if CUDA is available
+    scaler = None
+    if use_mixed_precision:
+        if torch.cuda.is_available():
+            scaler = torch.cuda.amp.GradScaler(enabled=True)
+        else:
+            print("[Warning] Mixed precision disabled: CUDA not available.")
+            use_mixed_precision = False
+
+    pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}")
     for batch_idx, (inputs, targets) in enumerate(pbar):
         inputs, targets = inputs.to(device), targets.to(device)
-        
-        # Apply mixup augmentation
+
+        # Mixup augmentation
         inputs, targets_a, targets_b, lam = mixup_data(inputs, targets, device=device)
-        
-        # Zero the gradient buffers
+
         optimizer.zero_grad()
-        
-        # Forward pass
-        outputs = model(inputs)
-        
-        # Calculate loss with mixup
-        loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
-        
-        # Backward pass
-        loss.backward()
-        
-        # Gradient clipping
-        torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
-        
-        # Optimize
-        optimizer.step()
-        scheduler.step()
-        
-        # Statistics
-        running_loss += loss.item()
-        
-        # For accuracy calculation, use original targets
+
+        # Forward pass under autocast if mixed precision is enabled
+        with torch.cuda.amp.autocast(enabled=use_mixed_precision, dtype=dtype):
+            outputs = model(inputs)
+            loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
+
+        # Backward + optimization
+        if use_mixed_precision:
+            scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
+            optimizer.step()
+
+        # Step LR scheduler per iteration if provided
+        if scheduler is not None:
+            scheduler.step()
+
+        # ---- Accuracy calculation ----
+        # For mixup, this is an approximation: count correct if matches either target_a or target_b
         _, predicted = outputs.max(1)
         total += targets.size(0)
-        correct += predicted.eq(targets).sum().item()
-        
-        # Update progress bar
-        current_lr = optimizer.param_groups[0]['lr']
-        # pbar.set_postfix({
-        #     'loss': f'{running_loss/(batch_idx+1):.3f}',
-        #     'acc': f'{100.*correct/total:.2f}%',
-        #     'lr': f'{current_lr:.6f}'
-        # })
+        correct += (lam * predicted.eq(targets_a).sum().item() +
+                    (1 - lam) * predicted.eq(targets_b).sum().item())
+
+        # Loss tracking
+        running_loss += loss.item()
+        avg_loss = running_loss / (batch_idx + 1)
+        acc = 100.0 * correct / total
+        current_lr = optimizer.param_groups[0]["lr"]
+
+        pbar.set_postfix({
+            "loss": f"{avg_loss:.3f}",
+            "acc": f"{acc:.2f}%",
+            "lr": f"{current_lr:.6f}"
+        })
