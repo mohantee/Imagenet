@@ -23,7 +23,7 @@ def evaluate(model, test_loader, criterion, device, use_mixed_precision=False, d
             inputs, targets = inputs.to(device), targets.to(device)
             
             # Mixed precision context for evaluation
-            with torch.cuda.amp.autocast(enabled=use_mixed_precision, dtype=dtype):
+            with torch.amp.autocast('cuda', enabled=use_mixed_precision, dtype=dtype):
                 # Forward pass
                 outputs = model(inputs)
                 loss = criterion(outputs, targets)

@@ -106,7 +106,7 @@ def train(model, train_loader, criterion, optimizer, scheduler, device, epoch, u
         optimizer.zero_grad()
 
         # Forward pass under autocast if mixed precision is enabled
-        with torch.cuda.amp.autocast(enabled=use_mixed_precision, dtype=dtype):
+        with torch.amp.autocast('cuda', enabled=use_mixed_precision, dtype=dtype):
             outputs = model(inputs)
             loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
 
@@ -138,7 +138,7 @@ def train(model, train_loader, criterion, optimizer, scheduler, device, epoch, u
         avg_loss = running_loss / (batch_idx + 1)
         acc = 100.0 * correct / total
         current_lr = optimizer.param_groups[0]["lr"]
-        logging.info(f"\n")
+        
         pbar.set_postfix({
             "loss": f"{avg_loss:.3f}",
             "acc": f"{acc:.2f}%",
