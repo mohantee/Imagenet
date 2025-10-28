@@ -4,6 +4,7 @@ from torchvision import datasets, transforms
 from tqdm import tqdm
 import os
 from model import ResNet50
+import logging
 
 def evaluate(model, test_loader, criterion, device, use_mixed_precision=False, dtype=torch.float16):
     model.eval()
@@ -40,7 +41,6 @@ def evaluate(model, test_loader, criterion, device, use_mixed_precision=False, d
             })
     
     accuracy = 100. * correct / total
-    print(f'\nTest set: Average loss: {test_loss/total:.3f}, '
-          f'Accuracy: {accuracy:.2f}%')
+    logging.info(f'Test set: Average loss: {test_loss/total:.3f}, Accuracy: {accuracy:.2f}%')
     return accuracy
 

@@ -239,7 +239,7 @@ def main():
             best_acc = max(best_acc, acc)
             logging.info(f"Saved checkpoint ({name}) with acc={acc:.2f}, time={(time.perf_counter() - start_ts)/60} mins")
 
-        logging.info(f"Epoch {epoch+1} completed in {timedelta(seconds=int(time.perf_counter() - start_ts))}")
+        logging.info(f"Epoch {epoch+1} completed in {timedelta(seconds=int(time.perf_counter() - start_ts))}, Accuracy: {acc:.2f}%")
 
     logging.info(f"Training completed. Best accuracy: {best_acc:.2f}%")
 

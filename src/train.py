@@ -6,7 +6,7 @@ from torchvision import datasets, transforms
 from tqdm import tqdm
 import os
 import numpy as np
-
+import logging
 
 
 def train_transforms(augment: bool = False):
@@ -93,7 +93,7 @@ def train(model, train_loader, criterion, optimizer, scheduler, device, epoch, u
         if torch.cuda.is_available():
             scaler = torch.cuda.amp.GradScaler(enabled=True)
         else:
-            print("[Warning] Mixed precision disabled: CUDA not available.")
+            logging.info("[Warning] Mixed precision disabled: CUDA not available.")
             use_mixed_precision = False
 
     pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}")
@@ -138,7 +138,7 @@ def train(model, train_loader, criterion, optimizer, scheduler, device, epoch, u
         avg_loss = running_loss / (batch_idx + 1)
         acc = 100.0 * correct / total
         current_lr = optimizer.param_groups[0]["lr"]
-
+        logging.info(f"\n")
         pbar.set_postfix({
             "loss": f"{avg_loss:.3f}",
             "acc": f"{acc:.2f}%",
