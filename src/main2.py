@@ -149,7 +149,7 @@ def main():
     p.add_argument("--num_workers", type=int, default=4)
     p.add_argument("--lr", type=float, default=0.1)
     p.add_argument("--resume", type=str, default=None)
-    p.add_argument("--save_freq", type=int, default=3)
+    p.add_argument("--save_freq", type=int, default=2)
     p.add_argument("--mixed_precision", action="store_true")
     p.add_argument("--precision_type", choices=["fp16", "bf16"], default="bf16")
     p.add_argument("--max_lr", type=float, default=2e-3)
