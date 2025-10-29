@@ -17,22 +17,24 @@ def evaluate(model, test_loader, criterion, device, use_mixed_precision=False, d
         pbar = tqdm(test_loader, desc='Evaluating')
         for inputs, targets in pbar:
             inputs, targets = inputs.to(device), targets.to(device)
-            
+
             # Mixed precision context for evaluation
             with torch.amp.autocast('cuda', enabled=use_mixed_precision, dtype=dtype):
                 # Forward pass
                 outputs = model(inputs)
                 loss = criterion(outputs, targets)
-            
-            # Statistics
-            test_loss += loss.item()
+
+            # Statistics: accumulate loss weighted by batch size so final avg is per-sample
+            batch_size = inputs.size(0)
+            test_loss += loss.item() * batch_size
             _, predicted = outputs.max(1)
-            total += targets.size(0)
+            total += batch_size
             correct += predicted.eq(targets).sum().item()
-            
-            # Update progress bar
+
+            # Update progress bar using per-sample average loss
+            avg_loss = test_loss / total if total > 0 else 0.0
             pbar.set_postfix({
-                'loss': f'{test_loss/total:.3f}',
+                'loss': f'{avg_loss:.3f}',
                 'acc': f'{100.*correct/total:.2f}%'
             })
     

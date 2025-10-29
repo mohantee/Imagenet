@@ -76,11 +76,13 @@ def mixup_criterion(criterion, pred, y_a, y_b, lam):
     return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
 
 
-def train(model, train_loader, criterion, optimizer, scheduler, device, epoch, use_mixed_precision=False, dtype=torch.float16):
+def train(model, train_loader, criterion, optimizer, scheduler, device, epoch,
+          use_mixed_precision=False, dtype=torch.float16, step_scheduler_on_batch: bool = False):
     model.train()
     running_loss = 0.0
     correct = 0
     total = 0
+    total_samples = 0
     GRAD_CLIP = 1.0
     
     # Initialize gradient scaler for mixed precision training if CUDA is available
@@ -91,6 +93,19 @@ def train(model, train_loader, criterion, optimizer, scheduler, device, epoch, u
         else:
             logging.info("[Warning] Mixed precision disabled: CUDA not available.")
             use_mixed_precision = False
+
+    # Auto-detect common per-batch schedulers and warn/adjust step_scheduler_on_batch.
+    # OneCycleLR and CyclicLR are intended to be stepped every batch. ReduceLROnPlateau
+    # should be stepped externally with validation metrics. For unknown schedulers we
+    # keep the user's preference.
+    if scheduler is not None:
+        sched_name = scheduler.__class__.__name__
+        per_step_defaults = ("OneCycleLR", "CyclicLR")
+        if sched_name in per_step_defaults and not step_scheduler_on_batch:
+            logging.info(f"Detected scheduler '{sched_name}' which is typically stepped per-batch. Enabling step_scheduler_on_batch=True automatically.")
+            step_scheduler_on_batch = True
+        elif sched_name == "ReduceLROnPlateau" and step_scheduler_on_batch:
+            logging.warning(f"Detected scheduler 'ReduceLROnPlateau' which expects metric-based stepping. It's unusual to step it per-batch.")
 
     pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}")
     for batch_idx, (inputs, targets) in enumerate(pbar):
@@ -118,23 +133,30 @@ def train(model, train_loader, criterion, optimizer, scheduler, device, epoch, u
             torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
             optimizer.step()
 
-        # Step LR scheduler per iteration if provided
-        if scheduler is not None:
-            scheduler.step()
+        # Step LR scheduler per iteration only when explicitly requested
+        # (e.g., OneCycleLR or user sets step_scheduler_on_batch=True)
+        if scheduler is not None and step_scheduler_on_batch:
+            try:
+                scheduler.step()
+            except Exception:
+                # Some schedulers expect epoch-level stepping; skip here and let caller handle epoch steps
+                pass
 
         # ---- Accuracy calculation ----
         # For mixup, this is an approximation: count correct if matches either target_a or target_b
         _, predicted = outputs.max(1)
-        total += targets.size(0)
+        batch_size = targets.size(0)
+        total += batch_size
+        total_samples += batch_size
         correct += (lam * predicted.eq(targets_a).sum().item() +
                     (1 - lam) * predicted.eq(targets_b).sum().item())
 
-        # Loss tracking
-        running_loss += loss.item()
-        avg_loss = running_loss / (batch_idx + 1)
-        acc = 100.0 * correct / total
+        # Loss tracking: accumulate per-sample so average is meaningful
+        running_loss += loss.item() * batch_size
+        avg_loss = running_loss / total_samples if total_samples > 0 else 0.0
+        acc = 100.0 * correct / total if total > 0 else 0.0
         current_lr = optimizer.param_groups[0]["lr"]
-        
+
         pbar.set_postfix({
             "loss": f"{avg_loss:.3f}",
             "acc": f"{acc:.2f}%",
