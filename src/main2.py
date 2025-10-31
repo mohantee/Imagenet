@@ -121,7 +121,7 @@ def build_dataloaders(storage: StorageHandler, train_path, val_path, batch_size,
     else:
         train_dir, val_dir = train_path, val_path
 
-    train_set = ImageFolder(train_dir, transform=train_transforms())
+    train_set = ImageFolder(train_dir, transform=train_transforms(augment=True))
     val_set = ImageFolder(val_dir, transform=test_transforms())
 
     return (
