@@ -21,6 +21,7 @@ from torchvision.datasets import ImageFolder
 
 from model import ResNet50
 from train import train_transforms, test_transforms
+from torch_ema import ExponentialMovingAverage
 
 # -------------------------------------------------------------------
 # Storage Handler: single class for S3 / Local storage operations
@@ -187,10 +188,10 @@ def main():
     
     scheduler = optim.lr_scheduler.OneCycleLR(
         optimizer,
-        max_lr=scaled_lr,
-        steps_per_epoch=len(train_loader),
+        max_lr=scaled_lr,                # peak LR (e.g., 0.1 * batch_size/256)
         epochs=args.epochs,
-        pct_start=0.15,  # 15% warmup
+        steps_per_epoch=len(train_loader),
+        pct_start=0.05,                  # shorter warmup (5%)
         anneal_strategy='cos',
         cycle_momentum=True,
         base_momentum=0.85,
@@ -200,6 +201,7 @@ def main():
     )
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
     dtype = torch.float16 if args.precision_type == "fp16" else torch.bfloat16
+    ema = ExponentialMovingAverage(model.parameters(), decay=0.9999)
 
     start_epoch, best_acc = 0, 0
     if args.resume:
@@ -213,33 +215,32 @@ def main():
 
     for epoch in range(start_epoch, args.epochs):
         start_ts = time.perf_counter()
-        
-        # Train for one epoch
-        train_epoch(
-            model, train_loader, criterion, optimizer, scheduler, 
-            device, epoch, use_mixed_precision=args.mixed_precision, dtype=dtype
-        )
-        
-        # Evaluate
-        acc = evaluate_epoch(
-            model, val_loader, criterion, device, 
-            use_mixed_precision=args.mixed_precision, dtype=dtype
-        )
-        
-        if (epoch + 1) % args.save_freq == 0 or acc > best_acc:
+        train_epoch(model, train_loader, criterion, optimizer, scheduler, device, epoch,
+        use_mixed_precision=args.mixed_precision, dtype=dtype)
+        ema.update(model.parameters())
+
+
+        ema.store(model.parameters())
+        ema.copy_to(model.parameters())
+        acc = evaluate_epoch(model, val_loader, criterion, device,
+        use_mixed_precision=args.mixed_precision, dtype=dtype)
+        ema.restore(model.parameters())
+
+
+        if acc > best_acc:
+            best_acc = acc
             ckpt = {
                 "epoch": epoch,
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": optimizer.state_dict(),
                 "scheduler_state_dict": scheduler.state_dict(),
-                "accuracy": acc,
+                "accuracy": acc
             }
-            name = f"checkpoint_epoch_{epoch+1}.pth" if acc <= best_acc else "best_model.pth"
-            storage.save_checkpoint(ckpt, name)
-            best_acc = max(best_acc, acc)
-            logging.info(f"Saved checkpoint ({name}) with acc={acc:.2f}, time={(time.perf_counter() - start_ts)/60} mins")
+            storage.save_checkpoint(ckpt, f"best_model{epoch+1}.pth")
+            logging.info(f"Saved best checkpoint at epoch {epoch+1}, acc={acc:.2f}%")
 
-        logging.info(f"Epoch {epoch+1} completed in {timedelta(seconds=int(time.perf_counter() - start_ts))}, Accuracy: {acc:.2f}% \n")
+
+    logging.info(f"Epoch {epoch+1}/{args.epochs} completed in {timedelta(seconds=int(time.perf_counter()-start_ts))}, acc={acc:.2f}%")
 
     logging.info(f"Training completed. Best accuracy: {best_acc:.2f}%")
 
