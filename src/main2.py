@@ -149,13 +149,13 @@ def main():
     p.add_argument("--epochs", type=int, default=100)
     p.add_argument("--batch_size", type=int, default=256)
     p.add_argument("--num_workers", type=int, default=4)
-    p.add_argument("--lr", type=float, default=0.1)
+    p.add_argument("--lr", type=float, default=0.001)
     p.add_argument("--resume", type=str, default=None)
     p.add_argument("--save_freq", type=int, default=1)
     p.add_argument("--mixed_precision", action="store_true")
     p.add_argument("--precision_type", choices=["fp16", "bf16"], default="bf16")
-    p.add_argument("--max_lr", type=float, default=5e-3)
-    p.add_argument("--weight_decay", type=float, default=5e-4)
+    p.add_argument("--max_lr", type=float, default=0.1)
+    p.add_argument("--weight_decay", type=float, default=1e-4)
     p.add_argument("--momentum", type=float, default=0.9)
     args = p.parse_args()
 
@@ -181,9 +181,10 @@ def main():
 
     model = ResNet50(num_classes=num_classes).to(device)
 
-    scaled_lr = min(0.01 * (args.batch_size / 256), 0.01)
+    scaled_lr = 0.1 * (args.batch_size / 256)
     optimizer = SGD(model.parameters(), lr=scaled_lr, momentum=args.momentum,
                           weight_decay=args.weight_decay, nesterov=True)
+    
     # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     # optimizer = optim.AdamW(model.parameters(),lr=args.max_lr, weight_decay=args.weight_decay,betas=(0.9, 0.999))
     
@@ -238,7 +239,7 @@ def main():
             storage.save_checkpoint(ckpt, f"best_model{epoch+1}.pth")
             logging.info(f"Saved best checkpoint at epoch {epoch+1}, acc={acc:.2f}%")
 
-    logging.info(f"Epoch {epoch+1}/{args.epochs} completed in {timedelta(seconds=int(time.perf_counter()-start_ts))}, acc={acc:.2f}%")
+        logging.info(f"Epoch {epoch+1}/{args.epochs} completed in {timedelta(seconds=int(time.perf_counter()-start_ts))}, acc={acc:.2f}%")
 
     logging.info(f"Training completed. Best accuracy: {best_acc:.2f}%")
 

@@ -18,7 +18,7 @@ def train_transforms(augment: bool = False):
     Returns:
         torchvision.transforms.Compose with appropriate transforms
     """
-    MEAN = [0.485, 0.456, 0.4068]
+    MEAN = [0.485, 0.456, 0.406]
     STD = [0.229, 0.224, 0.225]
     if augment:
         return transforms.Compose([
@@ -48,7 +48,7 @@ def test_transforms():
         
     No augmentations are applied to ensure consistent evaluation.
     """
-    MEAN = [0.485, 0.456, 0.4068]
+    MEAN = [0.485, 0.456, 0.406]
     STD = [0.229, 0.224, 0.225]
     return transforms.Compose([
         transforms.Resize(256),              # Resize the shorter side to 256
