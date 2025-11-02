@@ -15,7 +15,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 import torch.nn as nn
-import torch.optim as optim
+from torch.optim import SGD, lr_scheduler
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 
@@ -181,17 +181,17 @@ def main():
     model = ResNet50(num_classes=num_classes).to(device)
 
     scaled_lr = args.lr * (args.batch_size / 256)
-    optimizer = optim.SGD(model.parameters(), lr=scaled_lr, momentum=args.momentum,
+    optimizer = SGD(model.parameters(), lr=scaled_lr, momentum=args.momentum,
                           weight_decay=args.weight_decay, nesterov=True)
     # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     # optimizer = optim.AdamW(model.parameters(),lr=args.max_lr, weight_decay=args.weight_decay,betas=(0.9, 0.999))
     
-    scheduler = optim.lr_scheduler.OneCycleLR(
+    scheduler = lr_scheduler.OneCycleLR(
         optimizer,
-        max_lr=scaled_lr,                # peak LR (e.g., 0.1 * batch_size/256)
+        max_lr=scaled_lr,
         epochs=args.epochs,
         steps_per_epoch=len(train_loader),
-        pct_start=0.05,                  # shorter warmup (5%)
+        pct_start=0.05,
         anneal_strategy='cos',
         cycle_momentum=True,
         base_momentum=0.85,
