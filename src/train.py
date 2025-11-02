@@ -105,7 +105,7 @@ def train(model, train_loader, criterion, optimizer, scheduler, device, epoch,
     model.train()
     running_loss, correct, total = 0.0, 0, 0
     # instantiate GradScaler correctly
-    scaler = torch.cuda.amp.GradScaler(enabled=use_mixed_precision)
+    scaler = torch.amp.GradScaler('cuda', enabled=use_mixed_precision)
 
     pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}")
     for inputs, targets in pbar:
