@@ -182,7 +182,7 @@ def main():
     model = ResNet50(num_classes=num_classes).to(device)
 
     scaled_lr = 0.1 * (args.batch_size / 256)
-    optimizer = SGD(model.parameters(), lr=scaled_lr, momentum=args.momentum,
+    optimizer = SGD(model.parameters(), lr=args.lr, momentum=args.momentum,
                           weight_decay=args.weight_decay, nesterov=True)
     
     # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
@@ -218,7 +218,7 @@ def main():
     for epoch in range(start_epoch, args.epochs):
         start_ts = time.perf_counter()
         train_epoch(model, train_loader, criterion, optimizer, scheduler, device, epoch,
-        use_mixed_precision=args.mixed_precision, dtype=dtype)
+        use_mixed_precision=args.mixed_precision, dtype=dtype, step_scheduler_on_batch=True)
 
         ema.store(model.parameters())          
         ema.copy_to(model.parameters())                   
