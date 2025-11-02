@@ -2,6 +2,7 @@
 import os
 import time
 import json
+from xml.parsers.expat import model
 import torch
 import logging
 import argparse
@@ -180,7 +181,7 @@ def main():
 
     model = ResNet50(num_classes=num_classes).to(device)
 
-    scaled_lr = args.lr * (args.batch_size / 256)
+    scaled_lr = min(0.01 * (args.batch_size / 256), 0.01)
     optimizer = SGD(model.parameters(), lr=scaled_lr, momentum=args.momentum,
                           weight_decay=args.weight_decay, nesterov=True)
     # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
@@ -217,15 +218,13 @@ def main():
         start_ts = time.perf_counter()
         train_epoch(model, train_loader, criterion, optimizer, scheduler, device, epoch,
         use_mixed_precision=args.mixed_precision, dtype=dtype)
-        ema.update(model.parameters())
 
-
-        ema.store(model.parameters())
-        ema.copy_to(model.parameters())
+        ema.store(model.parameters())          
+        ema.copy_to(model.parameters())                   
         acc = evaluate_epoch(model, val_loader, criterion, device,
         use_mixed_precision=args.mixed_precision, dtype=dtype)
-        ema.restore(model.parameters())
-
+        ema.restore(model.parameters())                
+        ema.update(model.parameters())                 
 
         if acc > best_acc:
             best_acc = acc
@@ -238,7 +237,6 @@ def main():
             }
             storage.save_checkpoint(ckpt, f"best_model{epoch+1}.pth")
             logging.info(f"Saved best checkpoint at epoch {epoch+1}, acc={acc:.2f}%")
-
 
     logging.info(f"Epoch {epoch+1}/{args.epochs} completed in {timedelta(seconds=int(time.perf_counter()-start_ts))}, acc={acc:.2f}%")
 

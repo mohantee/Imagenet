@@ -98,7 +98,11 @@ def train(model, train_loader, criterion, optimizer, scheduler, device, epoch,
     pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}")
     for inputs, targets in pbar:
         inputs, targets = inputs.to(device), targets.to(device)
-        inputs, targets_a, targets_b, lam = mixup_cutmix(inputs, targets, device=device)
+        if epoch < 5:  # avoid mixup early
+            lam = 1.0
+            targets_a, targets_b = targets, targets
+        else:
+            inputs, targets_a, targets_b, lam = mixup_cutmix(inputs, targets, device=device)
 
 
         optimizer.zero_grad()
