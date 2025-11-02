@@ -12,6 +12,7 @@ dependencies = [
     "pillow>=10.0.0",
     "tqdm>=4.65.0",
     "kaggle>=1.5.0",
+    "torch-ema>=0.3",
 ]
 requires-python = ">=3.8"
 
