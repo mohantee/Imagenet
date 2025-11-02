@@ -187,7 +187,7 @@ def main():
     
     scheduler = optim.lr_scheduler.OneCycleLR(
         optimizer,
-        max_lr=args.max_lr,
+        max_lr=scaled_lr,
         steps_per_epoch=len(train_loader),
         epochs=args.epochs,
         pct_start=0.15,  # 15% warmup
