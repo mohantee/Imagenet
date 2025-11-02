@@ -154,6 +154,7 @@ def main():
     p.add_argument("--precision_type", choices=["fp16", "bf16"], default="bf16")
     p.add_argument("--max_lr", type=float, default=5e-3)
     p.add_argument("--weight_decay", type=float, default=5e-4)
+    p.add_argument("--momentum", type=float, default=0.9)
     args = p.parse_args()
 
     os.makedirs(args.checkpoint_prefix, exist_ok=True)
@@ -177,9 +178,12 @@ def main():
     )
 
     model = ResNet50(num_classes=num_classes).to(device)
-    # optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-4)
+
+    scaled_lr = args.lr * (args.batch_size / 256)
+    optimizer = optim.SGD(model.parameters(), lr=scaled_lr, momentum=args.momentum,
+                          weight_decay=args.weight_decay, nesterov=True)
     # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
-    optimizer = optim.AdamW(model.parameters(),lr=args.max_lr, weight_decay=args.weight_decay,betas=(0.9, 0.999))
+    # optimizer = optim.AdamW(model.parameters(),lr=args.max_lr, weight_decay=args.weight_decay,betas=(0.9, 0.999))
     
     scheduler = optim.lr_scheduler.OneCycleLR(
         optimizer,
