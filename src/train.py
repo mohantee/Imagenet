@@ -78,6 +78,8 @@ def mixup_cutmix(inputs, targets, alpha=1.0, cutmix_prob=0.5, device='cuda'):
         bbx1, bby1, bbx2, bby2 = rand_bbox(inputs.size(), lam)
         inputs[:, :, bbx1:bbx2, bby1:bby2] = inputs[rand_index, :, bbx1:bbx2, bby1:bby2]
         lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (inputs.size(-1) * inputs.size(-2)))
+        targets_a, targets_b = targets, targets[rand_index]
+        return inputs, targets_a, targets_b, lam
     else:
         inputs = lam * inputs + (1 - lam) * inputs[rand_index, :]
         targets_a, targets_b = targets, targets[rand_index]
