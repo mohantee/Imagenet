@@ -7,11 +7,9 @@ import torch
 import logging
 import argparse
 import tempfile
-import hashlib
 from tqdm import tqdm
 from datetime import timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from pathlib import Path
 
 import boto3
 from botocore.config import Config
@@ -24,7 +22,7 @@ from torchvision.datasets import ImageFolder
 
 from model import ResNet50
 from train import train_transforms, test_transforms
-from torch.amp import GradScaler
+from torch_ema import ExponentialMovingAverage
 
 # -------------------------------------------------------------------
 # Storage Handler: single class for S3 / Local storage operations
@@ -205,7 +203,7 @@ def main():
     )
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
     dtype = torch.float16 if args.precision_type == "fp16" else torch.bfloat16
-    scaler = GradScaler("cuda") if args.mixed_precision else None
+    ema = ExponentialMovingAverage(model.parameters(), decay=0.9999)
 
     start_epoch, best_acc = 0, 0
     if args.resume:
