@@ -1,5 +1,9 @@
 import torch
+from torch.utils.data import DataLoader
+from torchvision import datasets, transforms
 from tqdm import tqdm
+import os
+from model import ResNet50
 import logging
 
 import model
