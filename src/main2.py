@@ -313,13 +313,26 @@ def main():
             ema.update(model.parameters())
         
         # Evaluate with EMA weights if available
+        # CRITICAL: Always use FP32 for evaluation to prevent numerical instability
         if ema:
             ema.store(model.parameters())
             ema.copy_to(model.parameters())
+            # Validate EMA weights before evaluation (check for NaN/Inf)
+            has_nan = False
+            for param in model.parameters():
+                if param is not None and (torch.isnan(param).any() or torch.isinf(param).any()):
+                    has_nan = True
+                    logging.warning("⚠️  EMA weights contain NaN/Inf - restoring original weights")
+                    break
+            if has_nan:
+                ema.restore(model.parameters())
+                logging.warning("⚠️  Skipping EMA evaluation, using original weights")
         
+        # CRITICAL: Always disable mixed precision for evaluation (prevents loss explosion)
+        # Even if mixed_precision is enabled for training, evaluation must use FP32
         acc = evaluate_epoch(
             model, val_loader, criterion, device,
-            use_mixed_precision=args.mixed_precision, dtype=dtype
+            use_mixed_precision=False, dtype=torch.float32  # Force FP32 evaluation
         )
         
         # Restore original weights after evaluation
