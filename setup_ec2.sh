@@ -49,7 +49,7 @@ python3 -m venv venv
 pip install --upgrade pip
 
 # Install project dependencies in the virtual environment
-pip install torch torchvision tqdm boto3 botocore
+pip install torch torchvision tqdm boto3 botocore torch-ema
 
 # Create directories for logs and checkpoints if they don't exist
 mkdir -p logs

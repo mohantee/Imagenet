@@ -102,7 +102,7 @@ class StorageHandler:
     def load_checkpoint(self, filename):
         if self.storage_type == "local":
             path = os.path.join(self.prefix, filename)
-            return torch.load(path, map_location="cpu") if os.path.exists(path) else None
+            return torch.load(path, map_location="cpu", weights_only=False) if os.path.exists(path) else None
 
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             try:
