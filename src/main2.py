@@ -310,13 +310,13 @@ def main():
         
         # Update EMA after training epoch
         if ema:
-            ema.update(model.parameters())
+            ema.update()
         
         # Evaluate with EMA weights if available
         # CRITICAL: Always use FP32 for evaluation to prevent numerical instability
         if ema:
-            ema.store(model.parameters())
-            ema.copy_to(model.parameters())
+            ema.store()
+            ema.copy_to()
             # Validate EMA weights before evaluation (check for NaN/Inf)
             has_nan = False
             for param in model.parameters():
@@ -325,7 +325,7 @@ def main():
                     logging.warning("⚠️  EMA weights contain NaN/Inf - restoring original weights")
                     break
             if has_nan:
-                ema.restore(model.parameters())
+                ema.restore()
                 logging.warning("⚠️  Skipping EMA evaluation, using original weights")
         
         # CRITICAL: Always disable mixed precision for evaluation (prevents loss explosion)
@@ -337,7 +337,7 @@ def main():
         
         # Restore original weights after evaluation
         if ema:
-            ema.restore(model.parameters())
+            ema.restore()
         
         # Step scheduler per epoch if not stepping per batch
         if not step_scheduler_on_batch and scheduler is not None:
