@@ -4,9 +4,8 @@ import torch.nn as nn
 class Bottleneck(nn.Module):
     expansion = 4
 
-    def __init__(self, in_channels, out_channels, stride=1, drop_prob=0.0):
+    def __init__(self, in_channels, out_channels, stride=1):
         super().__init__()
-        self.drop_prob = drop_prob
 
         # 1x1 convolution for dimension reduction
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
@@ -33,13 +32,6 @@ class Bottleneck(nn.Module):
                 nn.BatchNorm2d(out_channels * self.expansion)
             )
 
-    def _drop_path(self, x):
-        if not self.training or self.drop_prob == 0.0:
-            return x
-        keep_prob = 1 - self.drop_prob
-        mask = torch.rand((x.shape[0], 1, 1, 1), dtype=x.dtype, device=x.device) < keep_prob
-        return x.div(keep_prob) * mask
-    
     def forward(self, x):
         identity = x
 
@@ -62,7 +54,6 @@ class Bottleneck(nn.Module):
 class ResNet50(nn.Module):
     def __init__(self, num_classes=1000):
         super().__init__()
-        total_blocks = 3 + 4 + 6 + 3
 
         # Initial convolution layer
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
@@ -71,10 +62,10 @@ class ResNet50(nn.Module):
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
         # ResNet stages
-        self.stage1 = self._make_stage(64, 64, 3, stride=1, total_blocks=total_blocks)
-        self.stage2 = self._make_stage(256, 128, 4, stride=2, total_blocks=total_blocks)
-        self.stage3 = self._make_stage(512, 256, 6, stride=2, total_blocks=total_blocks)
-        self.stage4 = self._make_stage(1024, 512, 3, stride=2, total_blocks=total_blocks)
+        self.stage1 = self._make_stage(64, 64, 3, stride=1)      # Output: 256 channels
+        self.stage2 = self._make_stage(256, 128, 4, stride=2)    # Output: 512 channels
+        self.stage3 = self._make_stage(512, 256, 6, stride=2)    # Output: 1024 channels
+        self.stage4 = self._make_stage(1024, 512, 3, stride=2)   # Output: 2048 channels
 
         # Global average pooling and final fully connected layer
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
@@ -83,16 +74,16 @@ class ResNet50(nn.Module):
         # Initialize weights
         self._initialize_weights()
 
-    def _make_stage(self, in_channels, out_channels, num_blocks, stride, start_prob=0.0, end_prob=0.1, block_offset=0, total_blocks=16):
+    def _make_stage(self, in_channels, out_channels, num_blocks, stride):
         layers = []
-        for i in range(num_blocks):
-            drop_prob = start_prob + (end_prob - start_prob) * (block_offset + i) / total_blocks
-            layers.append(Bottleneck(
-                in_channels if i == 0 else out_channels * 4,
-                out_channels,
-                stride if i == 0 else 1,
-                drop_prob=drop_prob
-            ))
+
+        # First block with specified stride
+        layers.append(Bottleneck(in_channels, out_channels, stride))
+
+        # Remaining blocks with stride 1
+        for _ in range(1, num_blocks):
+            layers.append(Bottleneck(out_channels * 4, out_channels))
+
         return nn.Sequential(*layers)
 
     def _initialize_weights(self):
