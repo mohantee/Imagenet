@@ -1,0 +1,391 @@
+
+INFO:root:Resumed from epoch 3, best accuracy: 1.38%
+INFO:root:================================================================================
+INFO:root:Advanced Training Configuration:
+INFO:root:  Optimizer: SGD
+INFO:root:  Learning Rate: 0.06
+INFO:root:  Batch Size: 256
+INFO:root:  Label Smoothing: 0.1
+INFO:root:  CutMix: True (prob=0.5)
+INFO:root:  Mixup Alpha: 0.2, CutMix Alpha: 1.0
+INFO:root:  EMA: Disabled
+INFO:root:  Mixed Precision: True (bf16)
+INFO:root:  Gradient Accumulation: 1
+INFO:root:================================================================================
+Epoch 1: 100%|██████████| 5005/5005 [37:06<00:00,  2.25it/s, loss=6.942, acc=0.12%, lr=0.009998]^[[C^[[C^[[C^[[C
+Evaluating: 100%|██████████| 196/196 [00:53<00:00,  3.68it/s, loss=0.027, acc=0.17%]
+INFO:root:Test set: Average loss: 0.027, Accuracy: 0.17%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=0.17%, time=38.01 mins
+INFO:root:Epoch 1/120 completed in 0:38:00, Accuracy: 0.17%, Best: 0.17%
+Epoch 2: 100%|██████████| 5005/5005 [37:19<00:00,  2.24it/s, loss=6.819, acc=0.36%, lr=0.019996]
+Evaluating: 100%|██████████| 196/196 [00:53<00:00,  3.69it/s, loss=0.026, acc=0.81%]
+INFO:root:Test set: Average loss: 0.026, Accuracy: 0.81%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=0.81%, time=38.25 mins
+INFO:root:Epoch 2/120 completed in 0:38:14, Accuracy: 0.81%, Best: 0.81%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=10.18%, time=38.27 mins
+INFO:root:Epoch 4/120 completed in 0:38:16, Accuracy: 10.18%, Best: 10.18% 
+INFO:root:Test set: Average loss: 4.701, Accuracy: 17.25%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=17.25%, time=38.03 mins
+INFO:root:Epoch 5/120 completed in 0:38:01, Accuracy: 17.25%, Best: 17.25% 
+INFO:root:Test set: Average loss: 4.398, Accuracy: 21.89%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=21.89%, time=37.98 mins
+INFO:root:Epoch 6/120 completed in 0:37:58, Accuracy: 21.89%, Best: 21.89% 
+INFO:root:Test set: Average loss: 4.064, Accuracy: 27.67%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=27.67%, time=37.99 mins
+INFO:root:Epoch 7/120 completed in 0:37:59, Accuracy: 27.67%, Best: 27.67% 
+INFO:root:Test set: Average loss: 3.864, Accuracy: 31.08%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=31.08%, time=37.95 mins
+INFO:root:Epoch 8/120 completed in 0:37:57, Accuracy: 31.08%, Best: 31.08% 
+INFO:root:Test set: Average loss: 3.760, Accuracy: 33.10%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=33.10%, time=38.07 mins
+INFO:root:Epoch 9/120 completed in 0:38:04, Accuracy: 33.10%, Best: 33.10% 
+INFO:root:Test set: Average loss: 3.573, Accuracy: 36.89%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=36.89%, time=38.09 mins
+INFO:root:Epoch 10/120 completed in 0:38:05, Accuracy: 36.89%, Best: 36.89% 
+INFO:root:Test set: Average loss: 3.426, Accuracy: 39.92%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=39.92%, time=38.02 mins
+INFO:root:Epoch 11/120 completed in 0:38:01, Accuracy: 39.92%, Best: 39.92% 
+INFO:root:Test set: Average loss: 3.330, Accuracy: 41.64%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=41.64%, time=37.88 mins
+INFO:root:Epoch 12/120 completed in 0:37:53, Accuracy: 41.64%, Best: 41.64% 
+INFO:root:Test set: Average loss: 3.249, Accuracy: 43.79%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=43.79%, time=37.90 mins
+INFO:root:Epoch 13/120 completed in 0:37:54, Accuracy: 43.79%, Best: 43.79% 
+INFO:root:Test set: Average loss: 3.187, Accuracy: 44.79%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=44.79%, time=37.87 mins
+INFO:root:Epoch 14/120 completed in 0:37:52, Accuracy: 44.79%, Best: 44.79% 
+INFO:root:Test set: Average loss: 3.162, Accuracy: 45.19%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=45.19%, time=37.84 mins
+INFO:root:Epoch 15/120 completed in 0:37:50, Accuracy: 45.19%, Best: 45.19% 
+INFO:root:Test set: Average loss: 3.103, Accuracy: 46.86%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=46.86%, time=37.85 mins
+INFO:root:Epoch 16/120 completed in 0:37:50, Accuracy: 46.86%, Best: 46.86% 
+INFO:root:Test set: Average loss: 3.124, Accuracy: 47.20%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=47.20%, time=37.89 mins
+INFO:root:Epoch 17/120 completed in 0:37:53, Accuracy: 47.20%, Best: 47.20% 
+INFO:root:Test set: Average loss: 3.082, Accuracy: 47.90%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=47.90%, time=37.92 mins
+INFO:root:Epoch 18/120 completed in 0:37:54, Accuracy: 47.90%, Best: 47.90% 
+INFO:root:Test set: Average loss: 3.028, Accuracy: 48.78%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=48.78%, time=37.86 mins
+INFO:root:Epoch 19/120 completed in 0:37:51, Accuracy: 48.78%, Best: 48.78% 
+INFO:root:Test set: Average loss: 2.957, Accuracy: 50.16%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=50.16%, time=37.87 mins
+INFO:root:Epoch 20/120 completed in 0:37:52, Accuracy: 50.16%, Best: 50.16% 
+INFO:root:Test set: Average loss: 2.961, Accuracy: 50.64%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=50.64%, time=37.86 mins
+INFO:root:Epoch 21/120 completed in 0:37:51, Accuracy: 50.64%, Best: 50.64% 
+INFO:root:Test set: Average loss: 3.095, Accuracy: 48.05%
+INFO:root:Epoch 22/120 completed in 0:37:51, Accuracy: 48.05%, Best: 50.64% 
+INFO:root:Test set: Average loss: 2.911, Accuracy: 51.16%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=51.16%, time=37.87 mins
+INFO:root:Epoch 23/120 completed in 0:37:52, Accuracy: 51.16%, Best: 51.16% 
+INFO:root:Test set: Average loss: 2.959, Accuracy: 50.58%
+INFO:root:Epoch 24/120 completed in 0:37:50, Accuracy: 50.58%, Best: 51.16% 
+INFO:root:Test set: Average loss: 3.009, Accuracy: 50.19%
+INFO:root:💾 Saved checkpoint (checkpoint_epoch_25.pth) with acc=50.19%, time=37.90 mins
+INFO:root:Epoch 25/120 completed in 0:37:53, Accuracy: 50.19%, Best: 51.16% 
+INFO:root:Test set: Average loss: 2.952, Accuracy: 51.03%
+INFO:root:Epoch 26/120 completed in 0:37:51, Accuracy: 51.03%, Best: 51.16% 
+INFO:root:Test set: Average loss: 2.919, Accuracy: 51.57%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=51.57%, time=37.88 mins
+INFO:root:Epoch 27/120 completed in 0:37:52, Accuracy: 51.57%, Best: 51.57% 
+INFO:root:Test set: Average loss: 2.989, Accuracy: 49.40%
+INFO:root:Epoch 28/120 completed in 0:53:20, Accuracy: 49.40%, Best: 51.57% 
+INFO:root:Test set: Average loss: 3.035, Accuracy: 49.73%
+INFO:root:Epoch 29/120 completed in 0:51:43, Accuracy: 49.73%, Best: 51.57% 
+INFO:root:Test set: Average loss: 2.849, Accuracy: 52.83%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=52.83%, time=51.74 mins
+INFO:root:Epoch 30/120 completed in 0:51:44, Accuracy: 52.83%, Best: 52.83% 
+INFO:root:Test set: Average loss: 2.809, Accuracy: 54.27%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=54.27%, time=51.70 mins
+INFO:root:Epoch 31/120 completed in 0:51:42, Accuracy: 54.27%, Best: 54.27% 
+INFO:root:Test set: Average loss: 2.824, Accuracy: 53.57%
+INFO:root:Epoch 32/120 completed in 0:51:56, Accuracy: 53.57%, Best: 54.27% 
+INFO:root:Test set: Average loss: 2.789, Accuracy: 53.92%
+INFO:root:Epoch 33/120 completed in 0:51:57, Accuracy: 53.92%, Best: 54.27% 
+INFO:root:Test set: Average loss: 2.826, Accuracy: 54.09%
+INFO:root:Epoch 34/120 completed in 0:51:54, Accuracy: 54.09%, Best: 54.27% 
+INFO:root:Test set: Average loss: 2.801, Accuracy: 53.65%
+INFO:root:💾 Saved checkpoint (checkpoint_epoch_35.pth) with acc=53.65%, time=51.85 mins
+INFO:root:Epoch 35/120 completed in 0:51:51, Accuracy: 53.65%, Best: 54.27% 
+INFO:root:Test set: Average loss: 2.765, Accuracy: 55.22%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=55.22%, time=52.10 mins
+INFO:root:Epoch 36/120 completed in 0:52:05, Accuracy: 55.22%, Best: 55.22% 
+INFO:root:Test set: Average loss: 2.947, Accuracy: 51.16%
+INFO:root:Epoch 37/120 completed in 0:52:04, Accuracy: 51.16%, Best: 55.22% 
+INFO:root:Test set: Average loss: 2.753, Accuracy: 55.21%
+INFO:root:Epoch 38/120 completed in 0:52:11, Accuracy: 55.21%, Best: 55.22% 
+INFO:root:Test set: Average loss: 2.722, Accuracy: 55.60%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=55.60%, time=51.40 mins
+INFO:root:Epoch 39/120 completed in 0:51:24, Accuracy: 55.60%, Best: 55.60% 
+INFO:root:Test set: Average loss: 2.721, Accuracy: 55.92%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=55.92%, time=51.57 mins
+INFO:root:Epoch 40/120 completed in 0:51:34, Accuracy: 55.92%, Best: 55.92% 
+INFO:root:Test set: Average loss: 2.725, Accuracy: 55.73%
+INFO:root:Epoch 41/120 completed in 0:51:30, Accuracy: 55.73%, Best: 55.92% 
+INFO:root:Test set: Average loss: 2.713, Accuracy: 56.02%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=56.02%, time=51.64 mins
+INFO:root:Epoch 42/120 completed in 0:51:38, Accuracy: 56.02%, Best: 56.02% 
+INFO:root:Test set: Average loss: 2.739, Accuracy: 55.27%
+INFO:root:Epoch 43/120 completed in 0:51:34, Accuracy: 55.27%, Best: 56.02% 
+INFO:root:Test set: Average loss: 2.629, Accuracy: 58.06%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=58.06%, time=51.54 mins
+INFO:root:Epoch 44/120 completed in 0:51:32, Accuracy: 58.06%, Best: 58.06% 
+INFO:root:Test set: Average loss: 2.749, Accuracy: 56.21%
+INFO:root:💾 Saved checkpoint (checkpoint_epoch_45.pth) with acc=56.21%, time=51.75 mins
+INFO:root:Epoch 45/120 completed in 0:51:44, Accuracy: 56.21%, Best: 58.06% 
+INFO:root:Test set: Average loss: 2.731, Accuracy: 56.44%
+INFO:root:Epoch 46/120 completed in 0:51:49, Accuracy: 56.44%, Best: 58.06% 
+INFO:root:Test set: Average loss: 2.635, Accuracy: 57.38%
+INFO:root:Epoch 47/120 completed in 0:51:41, Accuracy: 57.38%, Best: 58.06% 
+INFO:root:Test set: Average loss: 2.681, Accuracy: 56.25%
+INFO:root:Epoch 48/120 completed in 0:51:43, Accuracy: 56.25%, Best: 58.06% 
+INFO:root:Test set: Average loss: 2.603, Accuracy: 58.47%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=58.47%, time=51.69 mins
+INFO:root:Epoch 49/120 completed in 0:51:41, Accuracy: 58.47%, Best: 58.47% 
+INFO:root:Test set: Average loss: 2.608, Accuracy: 58.23%
+INFO:root:💾 Saved checkpoint (checkpoint_epoch_50.pth) with acc=58.23%, time=51.69 mins
+INFO:root:Epoch 50/120 completed in 0:51:41, Accuracy: 58.23%, Best: 58.47% 
+INFO:root:Test set: Average loss: 2.639, Accuracy: 57.32%
+INFO:root:Epoch 51/120 completed in 0:51:42, Accuracy: 57.32%, Best: 58.47% 
+INFO:root:Test set: Average loss: 2.681, Accuracy: 56.89%
+INFO:root:Epoch 52/120 completed in 0:52:20, Accuracy: 56.89%, Best: 58.47% 
+
+INFO:root:Resumed from epoch 49, best accuracy: 58.47%
+INFO:root:================================================================================
+INFO:root:Advanced Training Configuration:
+INFO:root:  Optimizer: SGD
+INFO:root:  Learning Rate: 0.06
+INFO:root:  Batch Size: 256
+INFO:root:  Label Smoothing: 0.1
+INFO:root:  CutMix: True (prob=0.5)
+INFO:root:  Mixup Alpha: 0.2, CutMix Alpha: 1.0
+INFO:root:  EMA: Disabled
+INFO:root:  Mixed Precision: True (bf16)
+INFO:root:  Gradient Accumulation: 1
+INFO:root:================================================================================
+INFO:root:Test set: Average loss: 2.690, Accuracy: 56.52%
+INFO:root:💾 Saved checkpoint (checkpoint_epoch_50.pth) with acc=56.52%, time=61.01 mins
+INFO:root:Epoch 50/120 completed in 1:01:00, Accuracy: 56.52%, Best: 58.47% 
+INFO:root:Test set: Average loss: 2.647, Accuracy: 58.47%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=58.47%, time=61.04 mins
+INFO:root:Epoch 51/120 completed in 1:01:02, Accuracy: 58.47%, Best: 58.47% 
+INFO:root:Test set: Average loss: 2.600, Accuracy: 58.76%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=58.76%, time=61.01 mins
+INFO:root:Epoch 52/120 completed in 1:01:00, Accuracy: 58.76%, Best: 58.76% 
+INFO:root:Test set: Average loss: 2.634, Accuracy: 58.27%
+INFO:root:Epoch 53/120 completed in 0:52:39, Accuracy: 57.83%, Best: 58.76% 
+INFO:root:Test set: Average loss: 2.582, Accuracy: 59.14%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=59.14%, time=51.71 mins
+INFO:root:Epoch 54/120 completed in 0:51:42, Accuracy: 59.14%, Best: 59.14% 
+INFO:root:Test set: Average loss: 2.593, Accuracy: 59.28%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=59.28%, time=51.96 mins
+INFO:root:Epoch 55/120 completed in 0:51:57, Accuracy: 59.28%, Best: 59.28% 
+INFO:root:Test set: Average loss: 2.580, Accuracy: 59.56%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=59.56%, time=51.81 mins
+INFO:root:Epoch 56/120 completed in 0:51:48, Accuracy: 59.56%, Best: 59.56% 
+INFO:root:Test set: Average loss: 2.587, Accuracy: 59.78%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=59.78%, time=51.93 mins
+INFO:root:Epoch 57/120 completed in 0:51:55, Accuracy: 59.78%, Best: 59.78% 
+INFO:root:Test set: Average loss: 2.668, Accuracy: 57.75%
+INFO:root:Epoch 58/120 completed in 0:51:58, Accuracy: 57.75%, Best: 59.78% 
+INFO:root:Test set: Average loss: 2.508, Accuracy: 60.42%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=60.42%, time=51.99 mins
+INFO:root:Epoch 59/120 completed in 0:51:59, Accuracy: 60.42%, Best: 60.42% 
+INFO:root:Test set: Average loss: 2.514, Accuracy: 60.92%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=60.92%, time=51.95 mins
+INFO:root:Epoch 60/120 completed in 0:51:57, Accuracy: 60.92%, Best: 60.92% 
+INFO:root:Test set: Average loss: 2.508, Accuracy: 60.94%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=60.94%, time=51.98 mins
+INFO:root:Epoch 61/120 completed in 0:51:59, Accuracy: 60.94%, Best: 60.94% 
+INFO:root:Test set: Average loss: 2.535, Accuracy: 60.73%
+INFO:root:Epoch 62/120 completed in 0:51:56, Accuracy: 60.73%, Best: 60.94% 
+INFO:root:Test set: Average loss: 2.557, Accuracy: 60.54%
+INFO:root:Epoch 63/120 completed in 0:52:01, Accuracy: 60.54%, Best: 60.94% 
+INFO:root:Test set: Average loss: 2.500, Accuracy: 61.46%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=61.46%, time=52.08 mins
+INFO:root:Epoch 64/120 completed in 0:52:05, Accuracy: 61.46%, Best: 61.46% 
+INFO:root:Test set: Average loss: 2.548, Accuracy: 59.87%
+INFO:root:💾 Saved checkpoint (checkpoint_epoch_65.pth) with acc=59.87%, time=52.12 mins
+INFO:root:Epoch 65/120 completed in 0:52:06, Accuracy: 59.87%, Best: 61.46% 
+INFO:root:Test set: Average loss: 2.551, Accuracy: 60.78%
+INFO:root:Epoch 66/120 completed in 0:52:08, Accuracy: 60.78%, Best: 61.46% 
+INFO:root:Test set: Average loss: 2.445, Accuracy: 62.32%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=62.32%, time=52.08 mins
+INFO:root:Epoch 67/120 completed in 0:52:04, Accuracy: 62.32%, Best: 62.32% 
+INFO:root:Test set: Average loss: 2.520, Accuracy: 61.50%
+INFO:root:Epoch 68/120 completed in 0:52:07, Accuracy: 61.50%, Best: 62.32% 
+INFO:root:Test set: Average loss: 2.516, Accuracy: 61.00%
+INFO:root:Epoch 69/120 completed in 0:52:42, Accuracy: 61.00%, Best: 62.32% 
+INFO:root:Test set: Average loss: 2.470, Accuracy: 62.39%
+INFO:root:💾 Saved checkpoint (checkpoint_epoch_70.pth) with acc=62.39%, time=51.58 mins
+INFO:root:Epoch 70/120 completed in 0:51:34, Accuracy: 62.39%, Best: 62.81% 
+INFO:root:Test set: Average loss: 2.427, Accuracy: 63.05%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=63.05%, time=51.63 mins
+INFO:root:Epoch 71/120 completed in 0:51:37, Accuracy: 63.05%, Best: 63.05% 
+INFO:root:Test set: Average loss: 2.472, Accuracy: 62.75%
+INFO:root:Epoch 72/120 completed in 0:51:45, Accuracy: 62.75%, Best: 63.05% 
+INFO:root:Test set: Average loss: 2.429, Accuracy: 63.55%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=63.55%, time=51.78 mins
+INFO:root:Epoch 73/120 completed in 0:51:46, Accuracy: 63.55%, Best: 63.55% 
+INFO:root:Test set: Average loss: 2.395, Accuracy: 63.69%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=63.69%, time=51.70 mins
+INFO:root:Epoch 74/120 completed in 0:51:41, Accuracy: 63.69%, Best: 63.69% 
+INFO:root:Test set: Average loss: 2.401, Accuracy: 63.61%
+INFO:root:💾 Saved checkpoint (checkpoint_epoch_75.pth) with acc=63.61%, time=51.79 mins
+INFO:root:Epoch 75/120 completed in 0:51:47, Accuracy: 63.61%, Best: 63.69% 
+INFO:root:Test set: Average loss: 2.416, Accuracy: 64.35%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=64.35%, time=51.85 mins
+INFO:root:Epoch 76/120 completed in 0:51:51, Accuracy: 64.35%, Best: 64.35% 
+INFO:root:Test set: Average loss: 2.348, Accuracy: 64.90%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=64.90%, time=51.88 mins
+INFO:root:Epoch 77/120 completed in 0:51:52, Accuracy: 64.90%, Best: 64.90% 
+INFO:root:Test set: Average loss: 2.363, Accuracy: 64.53%
+INFO:root:Epoch 78/120 completed in 0:52:00, Accuracy: 64.53%, Best: 64.90% 
+INFO:root:Test set: Average loss: 2.412, Accuracy: 64.76%
+INFO:root:Epoch 79/120 completed in 0:52:01, Accuracy: 64.76%, Best: 64.90% 
+INFO:root:Test set: Average loss: 2.377, Accuracy: 64.90%
+INFO:root:💾 Saved checkpoint (checkpoint_epoch_80.pth) with acc=64.90%, time=51.89 mins
+INFO:root:Epoch 80/120 completed in 0:51:53, Accuracy: 64.90%, Best: 64.90% 
+INFO:root:Test set: Average loss: 2.345, Accuracy: 65.74%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=65.74%, time=51.75 mins
+INFO:root:Epoch 81/120 completed in 0:51:45, Accuracy: 65.74%, Best: 65.74% 
+INFO:root:Test set: Average loss: 2.328, Accuracy: 66.06%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=66.06%, time=51.87 mins
+INFO:root:Epoch 82/120 completed in 0:51:52, Accuracy: 66.06%, Best: 66.06% 
+INFO:root:Test set: Average loss: 2.313, Accuracy: 65.94%
+INFO:root:Epoch 83/120 completed in 0:51:57, Accuracy: 65.94%, Best: 66.06% 
+INFO:root:Test set: Average loss: 2.318, Accuracy: 66.34%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=66.34%, time=51.89 mins
+INFO:root:Epoch 84/120 completed in 0:51:53, Accuracy: 66.34%, Best: 66.34% 
+INFO:root:Test set: Average loss: 2.293, Accuracy: 66.50%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=66.50%, time=51.90 mins
+INFO:root:Epoch 85/120 completed in 0:51:54, Accuracy: 66.50%, Best: 66.50% 
+INFO:root:Test set: Average loss: 2.282, Accuracy: 66.97%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=66.97%, time=52.00 mins
+INFO:root:Epoch 86/120 completed in 0:51:59, Accuracy: 66.97%, Best: 66.97% 
+INFO:root:Test set: Average loss: 2.275, Accuracy: 67.17%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=67.17%, time=51.88 mins
+INFO:root:Epoch 87/120 completed in 0:51:52, Accuracy: 67.17%, Best: 67.17% 
+INFO:root:Test set: Average loss: 2.247, Accuracy: 67.77%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=67.77%, time=51.73 mins
+INFO:root:Epoch 88/120 completed in 0:51:44, Accuracy: 67.77%, Best: 67.77% 
+INFO:root:Test set: Average loss: 2.227, Accuracy: 68.41%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=68.41%, time=51.85 mins
+INFO:root:Epoch 89/120 completed in 0:51:51, Accuracy: 68.41%, Best: 68.41% 
+INFO:root:Test set: Average loss: 2.180, Accuracy: 69.18%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=69.18%, time=51.97 mins
+INFO:root:Epoch 90/120 completed in 0:51:58, Accuracy: 69.18%, Best: 69.18% 
+INFO:root:Test set: Average loss: 2.211, Accuracy: 68.96%
+INFO:root:Epoch 91/120 completed in 0:51:54, Accuracy: 68.96%, Best: 69.18% 
+INFO:root:Test set: Average loss: 2.189, Accuracy: 69.26%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=69.26%, time=51.95 mins
+INFO:root:Epoch 92/120 completed in 0:51:56, Accuracy: 69.26%, Best: 69.26% 
+INFO:root:Test set: Average loss: 2.165, Accuracy: 69.51%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=69.51%, time=52.57 mins
+INFO:root:Epoch 93/120 completed in 0:52:34, Accuracy: 69.51%, Best: 69.51% 
+INFO:root:Test set: Average loss: 2.204, Accuracy: 70.04%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=70.04%, time=51.90 mins
+INFO:root:Epoch 94/120 completed in 0:51:53, Accuracy: 70.04%, Best: 70.04% 
+INFO:root:Test set: Average loss: 2.164, Accuracy: 70.63%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=70.63%, time=51.98 mins
+INFO:root:Epoch 95/120 completed in 0:51:58, Accuracy: 70.63%, Best: 70.63% 
+INFO:root:Test set: Average loss: 2.147, Accuracy: 70.22%
+INFO:root:Epoch 96/120 completed in 0:51:57, Accuracy: 70.22%, Best: 70.63% 
+INFO:root:Test set: Average loss: 2.127, Accuracy: 70.84%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=70.84%, time=51.98 mins
+INFO:root:Epoch 97/120 completed in 0:51:58, Accuracy: 70.84%, Best: 70.84% 
+INFO:root:Test set: Average loss: 2.127, Accuracy: 71.03%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=71.03%, time=52.03 mins
+INFO:root:Epoch 98/120 completed in 0:52:01, Accuracy: 71.03%, Best: 71.03% 
+INFO:root:Test set: Average loss: 2.104, Accuracy: 71.42%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=71.42%, time=51.85 mins
+INFO:root:Epoch 99/120 completed in 0:51:50, Accuracy: 71.42%, Best: 71.42% 
+INFO:root:Test set: Average loss: 2.083, Accuracy: 71.76%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=71.76%, time=51.95 mins
+INFO:root:Epoch 100/120 completed in 0:51:56, Accuracy: 71.76%, Best: 71.76% 
+INFO:root:Test set: Average loss: 2.106, Accuracy: 71.83%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=71.83%, time=52.09 mins
+INFO:root:Epoch 101/120 completed in 0:52:05, Accuracy: 71.83%, Best: 71.83% 
+INFO:root:Test set: Average loss: 2.099, Accuracy: 72.34%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=72.34%, time=52.06 mins
+INFO:root:Epoch 102/120 completed in 0:52:03, Accuracy: 72.34%, Best: 72.34% 
+INFO:root:Test set: Average loss: 2.068, Accuracy: 72.42%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=72.42%, time=52.01 mins
+INFO:root:Epoch 103/120 completed in 0:52:00, Accuracy: 72.42%, Best: 72.42% 
+INFO:root:Test set: Average loss: 2.045, Accuracy: 72.72%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=72.72%, time=52.09 mins
+INFO:root:Epoch 104/120 completed in 0:52:05, Accuracy: 72.72%, Best: 72.72% 
+INFO:root:Test set: Average loss: 2.058, Accuracy: 72.99%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=72.99%, time=52.06 mins
+INFO:root:Epoch 105/120 completed in 0:52:03, Accuracy: 72.99%, Best: 72.99% 
+INFO:root:Test set: Average loss: 2.070, Accuracy: 73.13%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=73.13%, time=52.01 mins
+INFO:root:Epoch 106/120 completed in 0:52:00, Accuracy: 73.13%, Best: 73.13% 
+INFO:root:Test set: Average loss: 2.038, Accuracy: 73.48%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=73.48%, time=52.19 mins
+INFO:root:Epoch 107/120 completed in 0:52:11, Accuracy: 73.48%, Best: 73.48% 
+INFO:root:Test set: Average loss: 2.014, Accuracy: 73.78%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=73.78%, time=52.06 mins
+INFO:root:Epoch 108/120 completed in 0:52:03, Accuracy: 73.78%, Best: 73.78% 
+INFO:root:Test set: Average loss: 2.030, Accuracy: 73.93%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=73.93%, time=52.05 mins
+INFO:root:Epoch 109/120 completed in 0:52:03, Accuracy: 73.93%, Best: 73.93% 
+INFO:root:Test set: Average loss: 2.036, Accuracy: 73.93%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=73.93%, time=52.08 mins
+INFO:root:Epoch 110/120 completed in 0:52:04, Accuracy: 73.93%, Best: 73.93% 
+INFO:root:Test set: Average loss: 1.996, Accuracy: 74.12%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=74.12%, time=51.93 mins
+INFO:root:Epoch 111/120 completed in 0:51:55, Accuracy: 74.12%, Best: 74.12% 
+INFO:root:Test set: Average loss: 2.005, Accuracy: 74.33%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=74.33%, time=52.05 mins
+INFO:root:Epoch 112/120 completed in 0:52:02, Accuracy: 74.33%, Best: 74.33% 
+INFO:root:Test set: Average loss: 2.023, Accuracy: 74.41%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=74.41%, time=51.93 mins
+INFO:root:Epoch 113/120 completed in 0:51:55, Accuracy: 74.41%, Best: 74.41% 
+INFO:root:Test set: Average loss: 1.988, Accuracy: 74.52%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=74.52%, time=51.82 mins
+INFO:root:Epoch 114/120 completed in 0:51:49, Accuracy: 74.52%, Best: 74.52% 
+INFO:root:Test set: Average loss: 2.007, Accuracy: 74.59%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=74.59%, time=51.95 mins
+INFO:root:Epoch 115/120 completed in 0:51:57, Accuracy: 74.59%, Best: 74.59% 
+INFO:root:Test set: Average loss: 2.015, Accuracy: 74.59%
+INFO:root:Epoch 116/120 completed in 0:51:58, Accuracy: 74.59%, Best: 74.59% 
+INFO:root:Test set: Average loss: 1.973, Accuracy: 74.79%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=74.79%, time=51.73 mins
+INFO:root:Epoch 117/120 completed in 0:51:43, Accuracy: 74.79%, Best: 74.79% 
+INFO:root:Test set: Average loss: 1.981, Accuracy: 74.73%
+INFO:root:Epoch 118/120 completed in 0:52:14, Accuracy: 74.73%, Best: 74.79% 
+INFO:root:Test set: Average loss: 2.002, Accuracy: 74.62%
+INFO:root:Epoch 119/120 completed in 0:52:02, Accuracy: 74.62%, Best: 74.79%
+
+# Removed cutmix and resumed training from last best checkpoint
+INFO:root:Resumed from epoch 115, best accuracy: 74.59%
+INFO:root:================================================================================
+INFO:root:Advanced Training Configuration:
+INFO:root:  Optimizer: SGD
+INFO:root:  Learning Rate: 0.06
+INFO:root:  Batch Size: 256
+INFO:root:  Label Smoothing: 0.1
+INFO:root:  CutMix: False (prob=0.5)
+INFO:root:  Mixup Alpha: 0.2, CutMix Alpha: 1.0
+INFO:root:  EMA: Disabled
+INFO:root:  Mixed Precision: True (bf16)
+INFO:root:  Gradient Accumulation: 1
+INFO:root:================================================================================
+Epoch 116: 100%|██████████| 5005/5005 [50:18<00:00,  1.66it/s, loss=2.904, acc=59.50%, lr=0.000196]
+Evaluating: 100%|██████████| 196/196 [01:19<00:00,  2.46it/s, loss=1.943, acc=74.94%, skipped=0]
+INFO:root:Test set: Average loss: 1.943, Accuracy: 74.94%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=74.94%, time=51.65 mins
+INFO:root:Epoch 116/120 completed in 0:51:39, Accuracy: 74.94%, Best: 74.94%
+
+Epoch 117: 100%|██████████| 5005/5005 [50:29<00:00,  1.65it/s, loss=2.888, acc=59.76%, lr=0.000110]
+Evaluating: 100%|██████████| 196/196 [01:19<00:00,  2.46it/s, loss=1.960, acc=74.86%, skipped=0]
+INFO:root:Test set: Average loss: 1.960, Accuracy: 74.86%
+INFO:root:Epoch 117/120 completed in 0:51:49, Accuracy: 74.86%, Best: 74.94% 
+
+Epoch 118: 100%|██████████| 5005/5005 [50:28<00:00,  1.65it/s, loss=2.882, acc=59.89%, lr=0.000049] 
+Evaluating: 100%|██████████| 196/196 [01:19<00:00,  2.48it/s, loss=1.950, acc=74.85%, skipped=0]
+INFO:root:Test set: Average loss: 1.950, Accuracy: 74.85%
+INFO:root:Epoch 118/120 completed in 0:51:47, Accuracy: 74.85%, Best: 74.94%

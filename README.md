@@ -1,132 +1,162 @@
-# ResNet-50 ImageNet-100 Training
+# ResNet-50 ImageNet Training 🚀
 
-A complete implementation of ResNet-50 for training on the ImageNet-100 dataset with advanced data augmentation techniques including Mixup.
+A comprehensive implementation of ResNet-50 for training on ImageNet dataset, with testing full ImageNet-1K. Features advanced training techniques including mixed precision, advanced augmentations, and optimal learning rate scheduling.
 
-## 🚀 Features
+## Model Architecture 🏗️
 
-- **Custom ResNet-50 Implementation**: Built from scratch with proper bottleneck blocks
-- **ImageNet-100 Dataset**: Automated download and setup from Kaggle
-- **Advanced Data Augmentation**: Mixup, random crops, color jittering, and more
-- **Training Pipeline**: Complete training loop with checkpointing and evaluation
-- **Progress Monitoring**: Real-time training progress with tqdm
-- **Model Checkpointing**: Automatic saving of best models and periodic checkpoints
+ResNet-50 implementation with:
+- Input: 224×224×3 images
+- 4 feature extraction stages with bottleneck blocks
+- Output features: 2048
+- Final classifier: 2048 -> num_classes
+- BatchNorm and ReLU activations
 
-## 📁 Project Structure
+## Dataset Strategy 📊
 
-```
-Imagenet/
-├── src/
-│   ├── model.py          # ResNet-50 implementation
-│   ├── train.py          # Training functions with mixup
-│   ├── test.py           # Evaluation functions
-│   └── main.py           # Main training script
-├── download_imagenet100.py    # Dataset download script
-├── monitor_training.py        # Training monitoring tool
-├── setup.py                   # Quick setup script
-├── pyproject.toml            # Project dependencies
-└── README.md                 # This file
-```
+### Phase 1: ImageNet-100 Subset Testing
+- 100 carefully selected classes
+- ~130K training images
+- ~5K validation images
+- Used for rapid prototyping and validation
 
-## 🛠️ Installation
+### Phase 2: Full ImageNet (1K classes)
+- Complete ImageNet dataset
+- ~1.2M training images
+- ~50K validation images
+- Full-scale training
 
-### Prerequisites
-- Python 3.8+
-- pip or conda
+## Training Pipeline 🛠️
 
-### Quick Setup
+### Advanced Augmentations
+- RandAugment for robust feature learning (--use_randaugment)
+- Mixup augmentation (α = 0.2, --mixup_alpha=0.2)
+- CutMix (probability = 0.5, α = 1.0, --cutmix_prob=0.5 --cutmix_alpha=1.0)
+- Random resized crops and flips
+- Normalized with ImageNet stats
+
+### Optimization Settings
+- Optimizer: SGD (--optimizer=sgd)
+  - Base learning rate: 0.06 (--lr=0.06)
+  - Momentum: 0.9 (--momentum=0.9)
+  - Weight decay: 1e-4 (--weight_decay=1e-4)
+- Learning Rate Schedule
+  - Warmup epochs: 10 (--warmup_epochs=10)
+  - EMA enabled (--use_ema)
+- Mixed Precision: BF16 (--mixed_precision --precision_type=bf16)
+
+### Training Configuration
+- Batch size: 256 (--batch_size=256)
+- Epochs: 120 (--epochs=120)
+- Label smoothing: 0.1 (--label_smoothing=0.1)
+- Data loading workers: 4 (--num_workers=4)
+- Checkpoint frequency: Every 5 epochs (--save_freq=5)
+- Checkpoint directory: /mnt/imagenet/data/checkpoints (--checkpoint_prefix)
+- Resume training: Supported (--resume=/mnt/imagenet/data/checkpoints/best_model.pth)
+
+## Current Results 📈
+
+### ImageNet-100 Subset Performance
+Based on test_subset2.ipynb:
+- Peak validation accuracy: ~82%
+- Convergence: ~100 epochs
+- Training time: ~8 hours (V100 GPU)
+- Early stopping patience: 10 epochs
+- Best checkpoint saved at model_best.pth
+
+### Training Curves
+- Steady learning rate warmup (first 15% epochs)
+- Consistent accuracy improvement until plateau
+- Effective early stopping prevents overfitting
+
+## Usage Guide 🚀
+
+### For Subset Testing
 ```bash
-# Clone or download the project
-cd Imagenet
-
-### Manual Setup
-```bash
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install torch torchvision numpy pillow tqdm kaggle
-
-# Download ImageNet-100 dataset
-python download_imagenet100.py
-```
-
-## 📊 Dataset
-
-### ImageNet-100
-- **Classes**: 100 (subset of ImageNet-1K)
-- **Training Images**: ~130,000 (varies per class)
-- **Validation Images**: ~5,000 (50 per class)
-- **Image Size**: Variable (resized to 224x224 for training)
-- **Source**: Kaggle Dataset
-
-### Download
-```bash
-# Download to default location (./imagenet100)
-python download_imagenet100.py
-
-# Download to custom location
-python download_imagenet100.py /path/to/custom/directory
-```
-
-### Kaggle Setup
-Before downloading, you need to set up Kaggle API credentials:
-
-1. **Create Kaggle Account**: Go to [kaggle.com](https://www.kaggle.com) and create an account
-2. **Get API Token**: 
-   - Go to [Account Settings](https://www.kaggle.com/account)
-   - Click "Create New API Token"
-   - Download `kaggle.json`
-3. **Setup Credentials**:
-   ```bash
-   mkdir -p ~/.kaggle
-   cp kaggle.json ~/.kaggle/
-   chmod 600 ~/.kaggle/kaggle.json
-   ```
-
-### Dataset Details
-- **Source**: [Kaggle ImageNet-100](https://www.kaggle.com/datasets/ambityga/imagenet100)
-- **Structure**: Pre-organized into `train/` and `val/` directories
-- **Class Names**: Uses original ImageNet class names
-
-## 🏃‍♂️ Training
-
-### Basic Training
-```bash
-# Activate virtual environment
-source venv/bin/activate
-
-# Start training with default parameters
-python src/main.py --data_dir ./imagenet100
-```
-
-### Advanced Training Options
-```bash
-python src/main.py \
-    --data_dir ./imagenet-100 \
-    --batch_size 64 \
+python run_local_training.py \
+    --data_dir ./imagenet100 \
+    --mixed_precision \
+    --batch_size 128 \
     --epochs 100 \
-    --lr 0.01 \
-    --momentum 0.9 \
-    --weight_decay 1e-4 \
-    --num_workers 4 \
-    --save_freq 10
+    --label_smoothing 0.15
+```
+
+### For Full Dataset
+```bash
+python run_local_training.py \
+    --data_dir=/mnt/imagenet/data \
+    --batch_size=256 \
+    --epochs=120 \
+    --lr=0.06 \
+    --momentum=0.9 \
+    --warmup_epochs=10 \
+    --weight_decay=1e-4 \
+    --label_smoothing=0.1 \
+    --use_ema \
+    --use_cutmix \
+    --cutmix_prob=0.5 \
+    --mixup_alpha=0.2 \
+    --cutmix_alpha=1.0 \
+    --use_randaugment \
+    --mixed_precision \
+    --precision_type=bf16 \
+    --optimizer=sgd \
+    --num_workers=4 \
+    --save_freq=5 \
+    --checkpoint_prefix=/mnt/imagenet/data/checkpoints
+```
+
+## Dependencies 📦
+```
+torch>=2.0.0
+torchvision
+numpy
+tqdm
+kaggle  # for dataset download
+```
+
+## Monitoring 📊
+
+Progress monitoring available through:
+- Real-time loss/accuracy tracking
+- Learning rate scheduling visualization
+- Resource utilization metrics
+- Automatic checkpointing
+
+## Model Export 📤
+- Regular checkpoints saved every epoch
+- Best model saved based on validation accuracy
+- Support for FP32 and quantized models
+- ONNX export capability
+```
 ```
 
 ### Training Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--data_dir` | `./imagenet-100` | Path to 100-ImageNet dataset |
-| `--batch_size` | `32` | Training batch size |
-| `--epochs` | `100` | Number of training epochs |
-| `--lr` | `0.1` | Initial learning rate |
+| `--data_dir` | `/mnt/imagenet/data` | Path to ImageNet dataset |
+| `--batch_size` | `256` | Training batch size |
+| `--epochs` | `120` | Number of training epochs |
+| `--lr` | `0.06` | Initial learning rate |
 | `--momentum` | `0.9` | SGD momentum |
+| `--optimizer` | `sgd` | Optimizer type (sgd/adamw) |
+| `--warmup_epochs` | `10` | Number of warmup epochs |
 | `--weight_decay` | `1e-4` | Weight decay (L2 regularization) |
-| `--num_workers` | `4` | Data loading workers |
-| `--device` | `auto` | Device (cuda/cpu/auto) |
-| `--save_freq` | `10` | Save checkpoint every N epochs |
-| `--no_augment` | `False` | Disable data augmentation |
+| `--label_smoothing` | `0.1` | Label smoothing factor |
+| `--mixed_precision` | `True` | Enable mixed precision training |
+| `--precision_type` | `bf16` | Precision type (bf16/fp16) |
+| `--use_ema` | `True` | Use Exponential Moving Average |
+| `--use_cutmix` | `True` | Enable CutMix augmentation |
+| `--cutmix_prob` | `0.5` | Probability of applying CutMix |
+| `--cutmix_alpha` | `1.0` | Alpha parameter for CutMix |
+| `--mixup_alpha` | `0.2` | Alpha parameter for Mixup |
+| `--use_randaugment` | `True` | Enable RandAugment |
+| `--num_workers` | `4` | Number of data loading workers |
+| `--save_freq` | `5` | Save checkpoint frequency (epochs) |
+| `--checkpoint_prefix` | `/checkpoints` | Checkpoint directory path |
+| `--resume` | `None` | Path to checkpoint for resuming training |
+
+
 
 ## 🔧 Model Architecture
 
@@ -177,19 +207,16 @@ python monitor_training.py
 
 ### Training Output
 ```
-Epoch 1/100
---------------------------------------------------
-Epoch 1: 100%|██████████| 1563/1563 [05:23<00:00, 4.85it/s]
+Epoch 116: 100%|██████████| 5005/5005 [50:18<00:00,  1.66it/s, loss=2.904, acc=59.50%, lr=0.000196]
+Evaluating: 100%|██████████| 196/196 [01:19<00:00,  2.46it/s, loss=1.943, acc=74.94%, skipped=0]
+INFO:root:Test set: Average loss: 1.943, Accuracy: 74.94%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=74.94%, time=51.65 mins
+INFO:root:Epoch 116/120 completed in 0:51:39, Accuracy: 74.94%, Best: 74.94%
 
-Evaluating on test set...
-Evaluating: 100%|██████████| 313/313 [00:45<00:00, 6.89it/s]
-Test set: Average loss: 4.605, Accuracy: 1.00%
-
-Epoch 73/100: 100%|██████████| 990/990 [11:36<00:00,  1.42it/s, loss=1.711, acc=44.66%, lr=0.000206]
-Evaluating: 100%|██████████| 40/40 [00:24<00:00,  1.66it/s, loss=0.011, acc=83.88%]
-Test set: Average loss: 0.011, Accuracy: 83.88%
-💾 Checkpoint saved at epoch 73
-⏳ No improvement for 5 epochs. Best accuracy: 84.20%
+Epoch 117: 100%|██████████| 5005/5005 [50:29<00:00,  1.65it/s, loss=2.888, acc=59.76%, lr=0.000110]
+Evaluating: 100%|██████████| 196/196 [01:19<00:00,  2.46it/s, loss=1.960, acc=74.86%, skipped=0]
+INFO:root:Test set: Average loss: 1.960, Accuracy: 74.86%
+INFO:root:Epoch 117/120 completed in 0:51:49, Accuracy: 74.86%, Best: 74.94% 
 ```
 
 ## 🎯 Expected Results
@@ -199,10 +226,33 @@ Test set: Average loss: 0.011, Accuracy: 83.88%
 - **Convergence**: 50-80% after 50-100 epochs
 - **Best Accuracy**: 70-85% (depending on hyperparameters)
 
-### Training Time
-- **CPU**: ~2-3 hours for 50 epochs
-- **GPU**: ~30-60 minutes for 50 epochs
-- **Memory**: ~2-4 GB RAM
+### Training Time and Infrastructure
+- **Total Training Time**: 85-87 hours (full 120 epochs)
+- **Infrastructure**:
+  - AWS G5.2xlarge EC2 instance (single GPU)
+  - Spot instance configuration
+  - EBS storage for dataset
+
+### Cost Breakdown 💰
+- **Compute Cost**: ~$44 (85-87 hours × $0.51/hour spot price)
+- **Storage Cost**: ~$11 (EBS volume for dataset)
+- **Total Cost**: ~$55 for complete training
+
+### Resource Requirements
+- **GPU Memory**: NVIDIA A10G GPU (24GB VRAM)
+- **Storage**: EBS volume for dataset and checkpoints
+- **Instance Type**: g5.2xlarge (4 vCPU, 16GB RAM)
+
+
+### Further enhancements with OneCycleLR
+
+The training to be optimized with OneCycleLR scheduler to reduce training time and improve convergence:
+- Faster convergence (reduces needed epochs by ~30-40%)
+- Better generalization through learning rate annealing
+- Automatic warmup and cooldown phases
+- Momentum cycling for improved stability
+- Typically reaches 75% accuracy in ~60 epochs vs 120+ with step LR
+
 
 ## 🔍 Troubleshooting
 
@@ -211,7 +261,7 @@ Test set: Average loss: 0.011, Accuracy: 83.88%
 **1. CUDA Out of Memory**
 ```bash
 # Reduce batch size
-python src/main.py --batch_size 16
+python src/main.py --batch_size 64
 ```
 
 **2. Slow Training**
@@ -264,14 +314,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Mixup**: Beyond Empirical Risk Minimization (Zhang et al., 2017)
 - **Hugging Face**: For providing the 100-ImageNet dataset
 
-## 📞 Support
-
-If you encounter any issues or have questions:
-
-1. Check the [Troubleshooting](#-troubleshooting) section
-2. Search existing [Issues](../../issues)
-3. Create a new [Issue](../../issues/new) with detailed information
-
----
 
 **Happy Training! 🚀**
