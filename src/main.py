@@ -412,9 +412,12 @@ def main():
             ckpt = storage.load_checkpoint(args.resume)
             if ckpt:
                 model.load_state_dict(ckpt["model_state_dict"])
-                optimizer.load_state_dict(ckpt["optimizer_state_dict"])
-                if "scheduler_state_dict" in ckpt:
-                    scheduler.load_state_dict(ckpt["scheduler_state_dict"])
+                try:
+                    optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+                except ValueError as e:
+                    logging.warning(
+                        "Optimizer state not loaded due to mismatch with current optimizer: %s. \n"
+                    )
                 start_epoch = ckpt["epoch"] + 1
                 best_acc = ckpt.get("accuracy", 0)
                 if ema and "ema_state_dict" in ckpt:
@@ -443,7 +446,8 @@ def main():
             "optimizer_state_dict": optimizer.state_dict(),
             "accuracy": acc_fixres,
         }
-        storage.save_checkpoint(ckpt, args.checkpoint_prefix, "best_model_fixres.pth")
+    # Save fixres checkpoint (filename only — storage handles prefix)
+    storage.save_checkpoint(ckpt, "best_model_fixres.pth")
 
 if __name__ == "__main__":
     main()
