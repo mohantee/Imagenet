@@ -420,8 +420,6 @@ def main():
                     )
                 start_epoch = ckpt["epoch"] + 1
                 best_acc = ckpt.get("accuracy", 0)
-                if ema and "ema_state_dict" in ckpt:
-                    ema.load_state_dict(ckpt["ema_state_dict"])
                 logging.info(f"Resumed from epoch {start_epoch}, best accuracy: {best_acc:.2f}%")
 
 
