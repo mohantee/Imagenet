@@ -407,6 +407,21 @@ def main():
         model.train()
         model.to(device)
 
+        start_epoch, best_acc = 0, 0
+        if args.resume:
+            ckpt = storage.load_checkpoint(args.resume)
+            if ckpt:
+                model.load_state_dict(ckpt["model_state_dict"])
+                optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+                if "scheduler_state_dict" in ckpt:
+                    scheduler.load_state_dict(ckpt["scheduler_state_dict"])
+                start_epoch = ckpt["epoch"] + 1
+                best_acc = ckpt.get("accuracy", 0)
+                if ema and "ema_state_dict" in ckpt:
+                    ema.load_state_dict(ckpt["ema_state_dict"])
+                logging.info(f"Resumed from epoch {start_epoch}, best accuracy: {best_acc:.2f}%")
+
+
         for e in range(args.fixres_epochs):
             _ = train_epoch(
                 model, fr_train_loader, criterion, optimizer, None, device, e,
