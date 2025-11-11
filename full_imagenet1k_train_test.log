@@ -389,3 +389,31 @@ Epoch 118: 100%|██████████| 5005/5005 [50:28<00:00,  1.65it/
 Evaluating: 100%|██████████| 196/196 [01:19<00:00,  2.48it/s, loss=1.950, acc=74.85%, skipped=0]
 INFO:root:Test set: Average loss: 1.950, Accuracy: 74.85%
 INFO:root:Epoch 118/120 completed in 0:51:47, Accuracy: 74.85%, Best: 74.94%
+
+Epoch 119: 100%|██████████| 5005/5005 [50:25<00:00,  1.65it/s, loss=2.904, acc=59.59%, lr=0.000402]
+Evaluating: 100%|██████████| 196/196 [01:18<00:00,  2.50it/s, loss=1.949, acc=74.71%, skipped=0]
+INFO:root:Test set: Average loss: 1.949, Accuracy: 74.71%
+INFO:root:Epoch 119/125 completed in 0:51:44, Accuracy: 74.71%, Best: 74.94% 
+
+Evaluating: 100%|██████████| 196/196 [01:18<00:00,  2.48it/s, loss=1.942, acc=75.00%, skipped=0]
+INFO:root:Test set: Average loss: 1.942, Accuracy: 75.00%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=75.00%, time=51.84 mins
+INFO:root:Epoch 120/125 completed in 0:51:50, Accuracy: 75.00%, Best: 75.00% 
+Epoch 120: 100%|██████████| 5005/5005 [50:31<00:00,  1.65it/s, loss=2.887, acc=59.87%, lr=0.000279]
+
+ubuntu@ip-172-XX-XX-19:/mnt/imagenet/data/checkpoints$ tail -f fixres.log 
+INFO:root:================================================================================
+INFO:root:🔧 FixRes finetune ONLY @ 288
+WARNING:root:Optimizer state not loaded due to mismatch with current optimizer: %s. 
+
+INFO:root:Resumed from epoch 120, best accuracy: 75.00%
+Epoch 1: 100%|██████████| 5005/5005 [38:14<00:00,  2.18it/s, loss=1.799, acc=79.80%, lr=0.010000]
+Epoch 2: 100%|██████████| 5005/5005 [38:11<00:00,  2.18it/s, loss=1.771, acc=80.19%, lr=0.010000]
+Epoch 3: 100%|██████████| 5005/5005 [38:10<00:00,  2.18it/s, loss=1.763, acc=80.39%, lr=0.010000]
+Epoch 4: 100%|██████████| 5005/5005 [38:10<00:00,  2.18it/s, loss=1.759, acc=80.48%, lr=0.010000]
+Epoch 5: 100%|██████████| 5005/5005 [38:11<00:00,  2.18it/s, loss=1.756, acc=80.53%, lr=0.010000]
+Evaluating:   0%|          | 0/196 [00:00<?, ?it/s]/home/ubuntu/Imagenet/src/test.py:27: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=False):  # Explicitly disable autocast
+Evaluating: 100%|██████████| 196/196 [01:36<00:00,  2.03it/s, loss=1.944, acc=75.08%, skipped=0]
+INFO:root:Test set: Average loss: 1.944, Accuracy: 75.08%
+INFO:root:✅ FixRes done @ 288 — acc=75.08%
