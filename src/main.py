@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 
 from model import ResNet50
-from train import train_transforms, test_transforms
+from train import train_transforms, test_transforms, fixres_train_transforms, fixres_val_transforms
 from torch.amp import GradScaler
 
 # Optional: EMA for better model stability
@@ -124,7 +124,8 @@ from test import evaluate as evaluate_epoch
 # -------------------------------------------------------------------
 # Data loader creation
 # -------------------------------------------------------------------
-def build_dataloaders(storage: StorageHandler, train_path, val_path, batch_size, workers, use_randaugment=True):
+def build_dataloaders(storage: StorageHandler, train_path, val_path, batch_size, workers,
+                      use_randaugment=True, eval_resolution: int = 224):
     if storage.storage_type == "s3":
         train_dir = storage.sync_dataset(train_path, os.path.join(storage.cache_dir, "train"))
         val_dir = storage.sync_dataset(val_path, os.path.join(storage.cache_dir, "val"))
@@ -133,7 +134,7 @@ def build_dataloaders(storage: StorageHandler, train_path, val_path, batch_size,
 
     # Use advanced augmentation for training
     train_set = ImageFolder(train_dir, transform=train_transforms(augment=True, use_randaugment=use_randaugment))
-    val_set = ImageFolder(val_dir, transform=test_transforms())
+    val_set = ImageFolder(val_dir, transform=test_transforms(eval_resolution))
 
     return (
         DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True, 
@@ -142,6 +143,10 @@ def build_dataloaders(storage: StorageHandler, train_path, val_path, batch_size,
                    persistent_workers=True if workers > 0 else False),
         len(train_set.classes),
     )
+
+
+
+
 
 
 # -------------------------------------------------------------------
@@ -178,6 +183,11 @@ def main():
     p.add_argument("--use_randaugment", action="store_true", default=True, help="Use RandAugment")
     p.add_argument("--warmup_epochs", type=int, default=5, help="Warmup epochs for learning rate")
     p.add_argument("--optimizer", choices=["sgd", "adamw"], default="sgd", help="Optimizer type")
+    p.add_argument("--fixres_enable", action="store_true", help="Enable FixRes fine-tuning at higher resolution")
+    p.add_argument("--fixres_resolution", type=int, default=288, help="FixRes fine-tune/eval resolution")
+    p.add_argument("--fixres_epochs", type=int, default=5, help="FixRes fine-tune epochs (classifier only)")
+    p.add_argument("--fixres_lr", type=float, default=0.01, help="FixRes LR for classifier")
+    p.add_argument("--fixres_batch_size", type=int, default=None, help="Optional batch size for FixRes (defaults to --batch_size)")
     args = p.parse_args()
 
     os.makedirs(args.checkpoint_prefix, exist_ok=True)
@@ -199,173 +209,227 @@ def main():
         args.batch_size,
         args.num_workers,
         use_randaugment=args.use_randaugment,
+        eval_resolution=224,
     )
 
     model = ResNet50(num_classes=num_classes).to(device)
     
-    # Use SGD for ImageNet (typically better than AdamW)
-    if args.optimizer == "sgd":
-        # Scale learning rate by batch size (linear scaling rule)
-        base_lr = args.lr * (args.batch_size / 256.0)
-        optimizer = optim.SGD(
-            model.parameters(), 
-            lr=base_lr, 
-            momentum=args.momentum, 
-            weight_decay=args.weight_decay,
-            nesterov=True  # Nesterov momentum for better convergence
-        )
-        
-        # Cosine annealing with warmup (best for ImageNet)
-        warmup_steps = args.warmup_epochs * len(train_loader)
-        total_steps = args.epochs * len(train_loader)
-        
-        def lr_lambda(step):
-            if step < warmup_steps:
-                return step / warmup_steps
-            else:
-                progress = (step - warmup_steps) / (total_steps - warmup_steps)
-                return 0.5 * (1 + np.cos(np.pi * progress))
-        
-        scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
-        step_scheduler_on_batch = True
-    else:
-        # AdamW with OneCycleLR (alternative)
-        optimizer = optim.AdamW(
-            model.parameters(),
-            lr=args.lr,
-            weight_decay=args.weight_decay,
-            betas=(0.9, 0.999)
-        )
-        scheduler = optim.lr_scheduler.OneCycleLR(
-            optimizer,
-            max_lr=args.lr,
-            steps_per_epoch=len(train_loader),
-            epochs=args.epochs,
-            pct_start=args.warmup_epochs / args.epochs,
-            anneal_strategy='cos',
-            div_factor=25.0,
-            final_div_factor=1000.0
-        )
-        step_scheduler_on_batch = True
-    
-    # Loss with label smoothing (improves generalization)
-    criterion = nn.CrossEntropyLoss(label_smoothing=args.label_smoothing)
-    dtype = torch.float16 if args.precision_type == "fp16" else torch.bfloat16
-    
-    # Mixed precision scaler
-    scaler = GradScaler("cuda") if args.mixed_precision else None
-    
-    # EMA for model stability (optional but recommended)
-    ema = None
-    if args.use_ema and EMA_AVAILABLE:
-        ema = ExponentialMovingAverage(model.parameters(), decay=args.ema_decay)
-        logging.info(f"✅ EMA enabled with decay={args.ema_decay}")
-    elif args.use_ema and not EMA_AVAILABLE:
-        logging.warning("EMA requested but torch_ema not installed. Install with: pip install torch-ema")
-
-    start_epoch, best_acc = 0, 0
-    if args.resume:
-        ckpt = storage.load_checkpoint(args.resume)
-        if ckpt:
-            model.load_state_dict(ckpt["model_state_dict"])
-            optimizer.load_state_dict(ckpt["optimizer_state_dict"])
-            if "scheduler_state_dict" in ckpt:
-                scheduler.load_state_dict(ckpt["scheduler_state_dict"])
-            start_epoch = ckpt["epoch"] + 1
-            best_acc = ckpt.get("accuracy", 0)
-            if ema and "ema_state_dict" in ckpt:
-                ema.load_state_dict(ckpt["ema_state_dict"])
-            logging.info(f"Resumed from epoch {start_epoch}, best accuracy: {best_acc:.2f}%")
-
-    logging.info("=" * 80)
-    logging.info("Advanced Training Configuration:")
-    logging.info(f"  Optimizer: {args.optimizer.upper()}")
-    logging.info(f"  Learning Rate: {args.lr}")
-    logging.info(f"  Batch Size: {args.batch_size}")
-    logging.info(f"  Label Smoothing: {args.label_smoothing}")
-    logging.info(f"  CutMix: {args.use_cutmix} (prob={args.cutmix_prob})")
-    logging.info(f"  Mixup Alpha: {args.mixup_alpha}, CutMix Alpha: {args.cutmix_alpha}")
-    logging.info(f"  EMA: {'Enabled' if ema else 'Disabled'}")
-    logging.info(f"  Mixed Precision: {args.mixed_precision} ({args.precision_type})")
-    logging.info(f"  Gradient Accumulation: {args.gradient_accumulation_steps}")
-    logging.info("=" * 80)
-
-    for epoch in range(start_epoch, args.epochs):
-        start_ts = time.perf_counter()
-        
-        # Train for one epoch
-        scaler = train_epoch(
-            model, train_loader, criterion, optimizer, scheduler,
-            device, epoch,
-            use_mixed_precision=args.mixed_precision,
-            dtype=dtype,
-            scaler=scaler,
-            use_cutmix=args.use_cutmix,
-            cutmix_prob=args.cutmix_prob,
-            mixup_alpha=args.mixup_alpha,
-            cutmix_alpha=args.cutmix_alpha,
-            step_scheduler_on_batch=step_scheduler_on_batch,
-            gradient_accumulation_steps=args.gradient_accumulation_steps
-        )
-        
-        # Update EMA after training epoch
-        if ema:
-            ema.update()
-        
-        # Evaluate with EMA weights if available
-        # CRITICAL: Always use FP32 for evaluation to prevent numerical instability
-        if ema:
-            ema.store()
-            ema.copy_to()
-            # Validate EMA weights before evaluation (check for NaN/Inf)
-            has_nan = False
-            for param in model.parameters():
-                if param is not None and (torch.isnan(param).any() or torch.isinf(param).any()):
-                    has_nan = True
-                    logging.warning("⚠️  EMA weights contain NaN/Inf - restoring original weights")
-                    break
-            if has_nan:
-                ema.restore()
-                logging.warning("⚠️  Skipping EMA evaluation, using original weights")
-        
-        # CRITICAL: Always disable mixed precision for evaluation (prevents loss explosion)
-        # Even if mixed_precision is enabled for training, evaluation must use FP32
-        acc = evaluate_epoch(
-            model, val_loader, criterion, device,
-            use_mixed_precision=False, dtype=torch.float32  # Force FP32 evaluation
-        )
-        
-        # Restore original weights after evaluation
-        if ema:
-            ema.restore()
-        
-        # Step scheduler per epoch if not stepping per batch
-        if not step_scheduler_on_batch and scheduler is not None:
-            scheduler.step()
-        
-        if (epoch + 1) % args.save_freq == 0 or acc > best_acc:
-            # Save EMA state if available
-            ckpt = {
-                "epoch": epoch,
-                "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(),
-                "accuracy": acc,
-            }
+    if not args.fixres_enable:
+        # Use SGD for ImageNet (typically better than AdamW)
+        if args.optimizer == "sgd":
+            # Scale learning rate by batch size (linear scaling rule)
+            base_lr = args.lr * (args.batch_size / 256.0)
+            optimizer = optim.SGD(
+                model.parameters(), 
+                lr=base_lr, 
+                momentum=args.momentum, 
+                weight_decay=args.weight_decay,
+                nesterov=True  # Nesterov momentum for better convergence
+            )
             
-            if scheduler is not None:
-                ckpt["scheduler_state_dict"] = scheduler.state_dict()
+            # Cosine annealing with warmup (best for ImageNet)
+            warmup_steps = args.warmup_epochs * len(train_loader)
+            total_steps = args.epochs * len(train_loader)
             
+            def lr_lambda(step):
+                if step < warmup_steps:
+                    return step / warmup_steps
+                else:
+                    progress = (step - warmup_steps) / (total_steps - warmup_steps)
+                    return 0.5 * (1 + np.cos(np.pi * progress))
+            
+            scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+            step_scheduler_on_batch = True
+        else:
+            # AdamW with OneCycleLR (alternative)
+            optimizer = optim.AdamW(
+                model.parameters(),
+                lr=args.lr,
+                weight_decay=args.weight_decay,
+                betas=(0.9, 0.999)
+            )
+            scheduler = optim.lr_scheduler.OneCycleLR(
+                optimizer,
+                max_lr=args.lr,
+                steps_per_epoch=len(train_loader),
+                epochs=args.epochs,
+                pct_start=args.warmup_epochs / args.epochs,
+                anneal_strategy='cos',
+                div_factor=25.0,
+                final_div_factor=1000.0
+            )
+            step_scheduler_on_batch = True
+        
+        # Loss with label smoothing (improves generalization)
+        criterion = nn.CrossEntropyLoss(label_smoothing=args.label_smoothing)
+        dtype = torch.float16 if args.precision_type == "fp16" else torch.bfloat16
+        
+        # Mixed precision scaler
+        scaler = GradScaler("cuda") if args.mixed_precision else None
+        
+        # EMA for model stability (optional but recommended)
+        ema = None
+        if args.use_ema and EMA_AVAILABLE:
+            ema = ExponentialMovingAverage(model.parameters(), decay=args.ema_decay)
+            logging.info(f"✅ EMA enabled with decay={args.ema_decay}")
+        elif args.use_ema and not EMA_AVAILABLE:
+            logging.warning("EMA requested but torch_ema not installed. Install with: pip install torch-ema")
+
+        start_epoch, best_acc = 0, 0
+        if args.resume:
+            ckpt = storage.load_checkpoint(args.resume)
+            if ckpt:
+                model.load_state_dict(ckpt["model_state_dict"])
+                optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+                if "scheduler_state_dict" in ckpt:
+                    scheduler.load_state_dict(ckpt["scheduler_state_dict"])
+                start_epoch = ckpt["epoch"] + 1
+                best_acc = ckpt.get("accuracy", 0)
+                if ema and "ema_state_dict" in ckpt:
+                    ema.load_state_dict(ckpt["ema_state_dict"])
+                logging.info(f"Resumed from epoch {start_epoch}, best accuracy: {best_acc:.2f}%")
+
+        logging.info("=" * 80)
+        logging.info("Advanced Training Configuration:")
+        logging.info(f"  Optimizer: {args.optimizer.upper()}")
+        logging.info(f"  Learning Rate: {args.lr}")
+        logging.info(f"  Batch Size: {args.batch_size}")
+        logging.info(f"  Label Smoothing: {args.label_smoothing}")
+        logging.info(f"  CutMix: {args.use_cutmix} (prob={args.cutmix_prob})")
+        logging.info(f"  Mixup Alpha: {args.mixup_alpha}, CutMix Alpha: {args.cutmix_alpha}")
+        logging.info(f"  EMA: {'Enabled' if ema else 'Disabled'}")
+        logging.info(f"  Mixed Precision: {args.mixed_precision} ({args.precision_type})")
+        logging.info(f"  Gradient Accumulation: {args.gradient_accumulation_steps}")
+        logging.info("=" * 80)
+
+        for epoch in range(start_epoch, args.epochs):
+            start_ts = time.perf_counter()
+            
+            # Train for one epoch
+            scaler = train_epoch(
+                model, train_loader, criterion, optimizer, scheduler,
+                device, epoch,
+                use_mixed_precision=args.mixed_precision,
+                dtype=dtype,
+                scaler=scaler,
+                use_cutmix=args.use_cutmix,
+                cutmix_prob=args.cutmix_prob,
+                mixup_alpha=args.mixup_alpha,
+                cutmix_alpha=args.cutmix_alpha,
+                step_scheduler_on_batch=step_scheduler_on_batch,
+                gradient_accumulation_steps=args.gradient_accumulation_steps
+            )
+            
+            # Update EMA after training epoch
             if ema:
-                ckpt["ema_state_dict"] = ema.state_dict()
+                ema.update()
             
-            name = f"checkpoint_epoch_{epoch+1}.pth" if acc <= best_acc else "best_model.pth"
-            storage.save_checkpoint(ckpt, name)
-            best_acc = max(best_acc, acc)
-            logging.info(f"💾 Saved checkpoint ({name}) with acc={acc:.2f}%, time={(time.perf_counter() - start_ts)/60:.2f} mins")
+            # Evaluate with EMA weights if available
+            # CRITICAL: Always use FP32 for evaluation to prevent numerical instability
+            if ema:
+                ema.store()
+                ema.copy_to()
+                # Validate EMA weights before evaluation (check for NaN/Inf)
+                has_nan = False
+                for param in model.parameters():
+                    if param is not None and (torch.isnan(param).any() or torch.isinf(param).any()):
+                        has_nan = True
+                        logging.warning("⚠️  EMA weights contain NaN/Inf - restoring original weights")
+                        break
+                if has_nan:
+                    ema.restore()
+                    logging.warning("⚠️  Skipping EMA evaluation, using original weights")
+            
+            # CRITICAL: Always disable mixed precision for evaluation (prevents loss explosion)
+            # Even if mixed_precision is enabled for training, evaluation must use FP32
+            acc = evaluate_epoch(
+                model, val_loader, criterion, device,
+                use_mixed_precision=False, dtype=torch.float32  # Force FP32 evaluation
+            )
+            
+            # Restore original weights after evaluation
+            if ema:
+                ema.restore()
+            
+            # Step scheduler per epoch if not stepping per batch
+            if not step_scheduler_on_batch and scheduler is not None:
+                scheduler.step()
+            
+            if (epoch + 1) % args.save_freq == 0 or acc > best_acc:
+                # Save EMA state if available
+                ckpt = {
+                    "epoch": epoch,
+                    "model_state_dict": model.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "accuracy": acc,
+                }
+                
+                if scheduler is not None:
+                    ckpt["scheduler_state_dict"] = scheduler.state_dict()
+                
+                if ema:
+                    ckpt["ema_state_dict"] = ema.state_dict()
+                
+                name = f"checkpoint_epoch_{epoch+1}.pth" if acc <= best_acc else "best_model.pth"
+                storage.save_checkpoint(ckpt, name)
+                best_acc = max(best_acc, acc)
+                logging.info(f"💾 Saved checkpoint ({name}) with acc={acc:.2f}%, time={(time.perf_counter() - start_ts)/60:.2f} mins")
 
-        logging.info(f"Epoch {epoch+1}/{args.epochs} completed in {timedelta(seconds=int(time.perf_counter() - start_ts))}, Accuracy: {acc:.2f}%, Best: {best_acc:.2f}% \n")
+            logging.info(f"Epoch {epoch+1}/{args.epochs} completed in {timedelta(seconds=int(time.perf_counter() - start_ts))}, Accuracy: {acc:.2f}%, Best: {best_acc:.2f}% \n")
 
-    logging.info(f"🎉 Training completed. Best accuracy: {best_acc:.2f}%")
+        logging.info(f"🎉 Training completed. Best accuracy: {best_acc:.2f}%")
+
+    elif args.fixres_enable:
+        logging.info("=" * 80)
+        logging.info(f"🔧 FixRes finetune ONLY @ {args.fixres_resolution}")
+
+        fr_bs = args.fixres_batch_size or args.batch_size
+
+        train_dir = os.path.join(args.data_dir, args.train_folder)
+        val_dir   = os.path.join(args.data_dir, args.val_folder)
+
+        fr_train = ImageFolder(train_dir, transform=fixres_train_transforms(args.fixres_resolution))
+        fr_val   = ImageFolder(val_dir,   transform=fixres_val_transforms(args.fixres_resolution))
+
+        fr_train_loader = DataLoader(fr_train, batch_size=fr_bs, shuffle=True,
+                                    num_workers=args.num_workers, pin_memory=True)
+        fr_val_loader   = DataLoader(fr_val, batch_size=fr_bs, shuffle=False,
+                                    num_workers=args.num_workers, pin_memory=True)
+
+        for p in model.parameters():
+            p.requires_grad = False
+        for p in model.fc.parameters():
+            p.requires_grad = True
+
+        optimizer = optim.SGD(model.fc.parameters(), lr=args.fixres_lr, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=True)
+        criterion = nn.CrossEntropyLoss(label_smoothing=args.label_smoothing)
+
+        model.train()
+        model.to(device)
+
+        for e in range(args.fixres_epochs):
+            _ = train_epoch(
+                model, fr_train_loader, criterion, optimizer, None, device, e,
+                use_mixed_precision=False, dtype=torch.float32,
+                label_smoothing=args.label_smoothing,
+                mixup_alpha=0.0,
+                use_cutmix=False,
+                gradient_accumulation_steps=1
+            )
+
+        acc_fixres = evaluate_epoch(
+            model, fr_val_loader, criterion, device,
+            use_mixed_precision=False, dtype=torch.float32
+        )
+        logging.info(f"✅ FixRes done @ {args.fixres_resolution} — acc={acc_fixres:.2f}%")
+
+        ckpt = {
+            "epoch": args.fixres_epochs,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "accuracy": acc_fixres,
+        }
+        storage.save_checkpoint(ckpt, args.checkpoint_prefix, "best_model_fixres.pth")
 
 if __name__ == "__main__":
     main()

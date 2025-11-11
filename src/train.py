@@ -1,4 +1,7 @@
+import math
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from torchvision import transforms
 from torchvision.transforms import autoaugment
 from tqdm import tqdm
@@ -21,53 +24,57 @@ def train_transforms(augment: bool = False, use_randaugment: bool = True):
     
     if augment:
         if use_randaugment:
-            # Advanced augmentation with RandAugment (better than basic transforms)
             return transforms.Compose([
-                transforms.RandomResizedCrop(224, scale=(0.08, 1.0), ratio=(0.75, 1.33)),
+                transforms.RandomResizedCrop(224),
+                autoaugment.RandAugment(num_ops=2, magnitude=9),
                 transforms.RandomHorizontalFlip(p=0.5),
-                autoaugment.RandAugment(num_ops=2, magnitude=9),  # RandAugment for ImageNet
-                transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1),
                 transforms.ToTensor(),
                 transforms.Normalize(MEAN, STD),
-                transforms.RandomErasing(p=0.25, scale=(0.02, 0.33))  # Cutout/Random Erasing
             ])
         else:
-            # Standard strong augmentation
             return transforms.Compose([
-                transforms.RandomResizedCrop(224, scale=(0.08, 1.0), ratio=(0.75, 1.33)),
+                transforms.RandomResizedCrop(224),
+                transforms.ColorJitter(0.4, 0.4, 0.4, 0.1),
                 transforms.RandomHorizontalFlip(p=0.5),
-                transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1),
-                transforms.RandomAffine(degrees=15, translate=(0.1, 0.1), scale=(0.9, 1.1)),
                 transforms.ToTensor(),
                 transforms.Normalize(MEAN, STD),
-                transforms.RandomErasing(p=0.25, scale=(0.02, 0.33))
             ])
     else:
         return transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(p=0.5),
             transforms.ToTensor(),
-            transforms.Normalize(MEAN, STD)
+            transforms.Normalize(MEAN, STD),
         ])
 
+def test_transforms(resolution: int = 224):
+    """Deterministic eval transforms at arbitrary resolution (FixRes-friendly)."""
+    MEAN = [0.485, 0.456, 0.406]
+    STD = [0.229, 0.224, 0.225]
+    resize_side = int(round(resolution / 0.875))
+    return transforms.Compose([
+        transforms.Resize(resize_side),
+        transforms.CenterCrop(resolution),
+        transforms.ToTensor(),
+        transforms.Normalize(MEAN, STD),
+    ])
 
-def test_transforms():
-    """Returns deterministic transforms for CIFAR-100 evaluation/test sets.
-    
-    Includes:
-        - ToTensor conversion
-        - Normalization with CIFAR-100 specific mean/std values
-        
-    No augmentations are applied to ensure consistent evaluation.
+def fixres_train_transforms(resolution: int = 288):
+    """FixRes fine-tune (classifier-only) transforms at higher resolution.
+    Mild aug only; backbone is frozen so we avoid heavy distortions.
     """
-    MEAN = [0.485, 0.456, 0.4068]
+    MEAN = [0.485, 0.456, 0.406]
     STD = [0.229, 0.224, 0.225]
     return transforms.Compose([
-        transforms.Resize(256),              # Resize the shorter side to 256
-        transforms.CenterCrop(224), 
+        transforms.RandomResizedCrop(resolution, scale=(0.5, 1.0), ratio=(0.75, 1.33)),
+        transforms.RandomHorizontalFlip(p=0.5),
         transforms.ToTensor(),
-        transforms.Normalize(MEAN, STD)
+        transforms.Normalize(MEAN, STD),
     ])
+
+def fixres_val_transforms(resolution: int = 288):
+    """Validation transforms matching FixRes eval resolution."""
+    return test_transforms(resolution)
 
 
 # Mixup augmentation
