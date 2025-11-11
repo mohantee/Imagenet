@@ -426,7 +426,6 @@ def main():
             _ = train_epoch(
                 model, fr_train_loader, criterion, optimizer, None, device, e,
                 use_mixed_precision=False, dtype=torch.float32,
-                label_smoothing=args.label_smoothing,
                 mixup_alpha=0.0,
                 use_cutmix=False,
                 gradient_accumulation_steps=1
