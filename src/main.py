@@ -268,7 +268,7 @@ def main():
         ckpt = storage.load_checkpoint(args.resume)
         if ckpt:
             model.load_state_dict(ckpt["model_state_dict"])
-            optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+            # optimizer.load_state_dict(ckpt["optimizer_state_dict"])
             if "scheduler_state_dict" in ckpt:
                 scheduler.load_state_dict(ckpt["scheduler_state_dict"])
             start_epoch = ckpt["epoch"] + 1
