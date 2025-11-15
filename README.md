@@ -207,16 +207,15 @@ python monitor_training.py
 
 ### Training Output
 ```
-Epoch 116: 100%|██████████| 5005/5005 [50:18<00:00,  1.66it/s, loss=2.904, acc=59.50%, lr=0.000196]
-Evaluating: 100%|██████████| 196/196 [01:19<00:00,  2.46it/s, loss=1.943, acc=74.94%, skipped=0]
-INFO:root:Test set: Average loss: 1.943, Accuracy: 74.94%
-INFO:root:💾 Saved checkpoint (best_model.pth) with acc=74.94%, time=51.65 mins
-INFO:root:Epoch 116/120 completed in 0:51:39, Accuracy: 74.94%, Best: 74.94%
+Evaluating: 100%|██████████| 196/196 [01:18<00:00,  2.48it/s, loss=1.942, acc=75.00%, skipped=0]
+INFO:root:Test set: Average loss: 1.942, Accuracy: 75.00%
+INFO:root:💾 Saved checkpoint (best_model.pth) with acc=75.00%, time=51.84 mins
+INFO:root:Epoch 120/125 completed in 0:51:50, Accuracy: 75.00%, Best: 75.00% 
+Epoch 120: 100%|██████████| 5005/5005 [50:31<00:00,  1.65it/s, loss=2.887, acc=59.87%, lr=0.000279]
 
-Epoch 117: 100%|██████████| 5005/5005 [50:29<00:00,  1.65it/s, loss=2.888, acc=59.76%, lr=0.000110]
-Evaluating: 100%|██████████| 196/196 [01:19<00:00,  2.46it/s, loss=1.960, acc=74.86%, skipped=0]
-INFO:root:Test set: Average loss: 1.960, Accuracy: 74.86%
-INFO:root:Epoch 117/120 completed in 0:51:49, Accuracy: 74.86%, Best: 74.94% 
+Evaluating: 100%|██████████| 196/196 [01:36<00:00,  2.03it/s, loss=1.944, acc=75.08%, skipped=0]
+INFO:root:Test set: Average loss: 1.944, Accuracy: 75.08%
+INFO:root:✅ FixRes done @ 288 — acc=75.08%
 ```
 
 ## 🎯 Expected Results
